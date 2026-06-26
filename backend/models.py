@@ -3,15 +3,15 @@
 SQLAlchemy 2.0 の `Mapped[...]` 記法で定義する。配列・タグ・チェックリストは
 JSON カラムで保持する。日時カラムは `DateTime(timezone=True)`。
 
-本 issue（求人要件登録）のスコープは `Job` モデルの完成までで、Candidate /
-Score の本体実装は後続 issue が行う。ただし求人削除時に候補者・スコアを
-カスケード削除できるよう、Job 側の関係定義の素地（cascade 設定の意図）を残す。
+`Job` と `Candidate` を定義する。求人削除時は `candidates.job_id` の
+ON DELETE CASCADE と Job 側 relationship の `cascade="all, delete-orphan"` で
+候補者を一括削除する。Score の本体実装は後続 issue が行う。
 """
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, ForeignKey, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
 
 from db import Base
@@ -53,14 +53,50 @@ class Job(Base):
         server_default=func.now(),
     )
 
-    # NOTE: 求人削除時に候補者・スコアをカスケード削除するための関係の素地。
-    # Candidate モデルは後続 issue で実装する。実装時は以下のような relationship を
-    # 追加し、candidates 側 FK の ON DELETE CASCADE と組み合わせて求人配下を
-    # 一括削除できるようにする（scores は candidates 経由でさらにカスケード）。
-    #
-    #   from sqlalchemy.orm import relationship
-    #   candidates: Mapped[list["Candidate"]] = relationship(
-    #       back_populates="job",
-    #       cascade="all, delete-orphan",
-    #       passive_deletes=True,
-    #   )
+    # 求人削除時に候補者（および候補者経由でスコア）をカスケード削除する。
+    # candidates 側 FK の ON DELETE CASCADE と組み合わせ、DB レベルでも
+    # ORM レベルでも求人配下を一括削除できるようにする。
+    candidates: Mapped[list["Candidate"]] = relationship(
+        back_populates="job",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class Candidate(Base):
+    """応募書類（構造化済み）。
+
+    `job_id` で求人に紐づく。求人削除時は FK の ON DELETE CASCADE で
+    一括削除される。配列フィールド（skills / certifications）は JSON カラムで保持する。
+    保存後の編集はスコープ外（削除のみ）。
+    """
+
+    __tablename__ = "candidates"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    job_id: Mapped[int] = mapped_column(
+        ForeignKey("jobs.id", ondelete="CASCADE"),
+    )
+
+    # 構造化フィールド（schemas.CandidateParseResult に対応）。
+    name: Mapped[str | None] = mapped_column(default=None)
+    age: Mapped[int | None] = mapped_column(default=None)
+    nearest_station: Mapped[str | None] = mapped_column(default=None)
+    desired_rate: Mapped[int | None] = mapped_column(default=None)
+    experience_years: Mapped[int | None] = mapped_column(default=None)
+    skills: Mapped[list[str]] = mapped_column(JSON, default=list)
+    certifications: Mapped[list[str]] = mapped_column(JSON, default=list)
+    work_history: Mapped[str | None] = mapped_column(default=None)
+    education: Mapped[str | None] = mapped_column(default=None)
+    self_pr: Mapped[str | None] = mapped_column(default=None)
+
+    # 原文（LLM には渡すが構造化対象には含めず、サーバが受領した入力をそのまま保持）。
+    raw_text: Mapped[str] = mapped_column()
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+
+    job: Mapped["Job"] = relationship(back_populates="candidates")
