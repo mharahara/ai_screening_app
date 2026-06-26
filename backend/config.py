@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     ollama_model: str = "gemma4:e4b"
     ollama_timeout: float = 120.0
 
+    # 構造化・マッチングの LLM 呼び出しリトライ上限（初回 + リトライ）。
+    parse_max_retries: int = 3
+
     # データベース（SQLite）
     database_url: str = "sqlite:///./rabbitpick.db"
 
