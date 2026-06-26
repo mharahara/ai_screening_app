@@ -18,8 +18,8 @@ from services.llm import (
     LLMTimeoutError,
     LLMUnavailableError,
     ParseFailedError,
-    structure_job,
 )
+from services.structuring import structure_job
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
