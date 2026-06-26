@@ -19,7 +19,7 @@ model: inherit
 - SQLAlchemy 2.0（`Mapped[...]` 記法を使う）
 - Pydantic + `pydantic-settings`（`.env` を型安全に読む）
 - `ollama`（**公式 Python SDK**。`format` に JSON Schema を渡して構造化出力を得る。）
-- `anthropic`（**公式 Python SDK**。`output_config.format` に JSON Schema を渡して構造化出力を得る。Claude provider 用。）
+- `anthropic`（**公式 Python SDK**。JSON Schema を system プロンプトに添えて JSON 出力を指示する（structured outputs は求人スキーマの複雑さ上限に抵触するため不使用）。Claude provider 用。）
 - dev: `ruff` / `mypy` / `pytest`（非同期テストが要るなら `pytest-asyncio`）
 
 **パッケージ管理は uv**。依存追加は `uv add <pkg>` / `uv add --dev <pkg>`、実行は `uv run ...`。`pip` を直接叩かない。`pyproject.toml` / `uv.lock` に同期させる。
@@ -59,7 +59,7 @@ backend/
 
 - LLM 呼び出しは `services/llm.py` の `structured_chat()` を介して行う。接続先（provider）は `LLM_PROVIDER` 環境変数で切り替える。
   - `ollama`（デフォルト）: ローカルの `gemma4:e4b` を **ollama 公式 SDK** で呼ぶ。`format` に JSON Schema を渡す。`localhost:11434` 常駐前提。
-  - `claude`: `claude-opus-4-8` を **anthropic 公式 SDK** で呼ぶ。`output_config.format` に JSON Schema を渡す。`ANTHROPIC_API_KEY` が必要。
+  - `claude`: `claude-opus-4-8` を **anthropic 公式 SDK** で呼ぶ。JSON Schema を system プロンプトに添えて JSON 出力を指示する（structured outputs は schema 複雑さ上限に抵触するため不使用）。`ANTHROPIC_API_KEY` が必要。
 - 構造化出力は **Pydantic 由来の JSON Schema** を渡して得る（自由文パースに頼らない）。スキーマは `schemas.py` の Pydantic と対応させる。
 - provider 選択・モデル名・接続先・タイムアウトは `config.py`（pydantic-settings）で `.env` から読む。
 - 用途は 3 つ: ①応募書類の構造化、②求人要件の構造化、③候補者 × 求人のスコアリング + サマリー生成。いずれも provider を意識せず `structured_chat()` を呼ぶだけ。

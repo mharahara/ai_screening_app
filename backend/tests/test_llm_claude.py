@@ -21,6 +21,7 @@ from services.llm import (
     ParseFailedError,
     ProviderRetryable,
     ProviderTimeout,
+    _extract_json,
     structured_chat,
 )
 
@@ -67,8 +68,8 @@ def test_complete_returns_text_block_content() -> None:
     assert content == _VALID_JOB_JSON
 
 
-def test_complete_splits_system_message() -> None:
-    """messages 先頭の system は system 引数へ切り出し、messages からは除く。"""
+def test_complete_splits_system_and_appends_schema_instruction() -> None:
+    """system は system 引数へ切り出し、JSON Schema 指示を末尾に添える。messages からは除く。"""
     captured: dict[str, object] = {}
 
     def fake_create(**kwargs: object) -> SimpleNamespace:
@@ -81,7 +82,13 @@ def test_complete_splits_system_message() -> None:
         JobParseResult,
     )
 
-    assert captured["system"] == "sys"
+    system = captured["system"]
+    assert isinstance(system, str)
+    assert system.startswith("sys")  # 元の system 指示を保持
+    # JSON Schema を提示し、JSON のみの出力を指示している（output_config.format は使わない）。
+    assert "json_schema" in system
+    assert "required_skills" in system  # スキーマのフィールドが埋め込まれている
+    assert "output_config" not in captured
     assert captured["messages"] == [{"role": "user", "content": "u"}]
     # temperature は送らない（Opus 4.8 では非対応）。
     assert "temperature" not in captured
@@ -92,6 +99,21 @@ def test_complete_connection_error_maps_to_unavailable() -> None:
 
     def fake_create(**kwargs: object) -> SimpleNamespace:
         raise _api_connection_error()
+
+    provider = _make_provider(fake_create)
+
+    with pytest.raises(LLMUnavailableError):
+        provider.complete([{"role": "user", "content": "u"}], JobParseResult)
+
+
+def test_complete_missing_api_key_maps_to_unavailable() -> None:
+    """ANTHROPIC_API_KEY 未設定（SDK が TypeError）は LLMUnavailableError にマップする。"""
+
+    def fake_create(**kwargs: object) -> SimpleNamespace:
+        raise TypeError(
+            "Could not resolve authentication method. Expected one of api_key, "
+            "auth_token, or credentials to be set."
+        )
 
     provider = _make_provider(fake_create)
 
@@ -111,11 +133,19 @@ def test_complete_timeout_maps_to_provider_timeout() -> None:
         provider.complete([{"role": "user", "content": "u"}], JobParseResult)
 
 
-def test_complete_status_error_maps_to_retryable() -> None:
-    """その他 APIStatusError は ProviderRetryable にマップする（リトライ対象）。"""
+def test_complete_5xx_status_error_maps_to_retryable() -> None:
+    """5xx（サーバ一時障害）は ProviderRetryable にマップする（リトライ対象）。"""
     provider = _make_provider(lambda **kwargs: (_ for _ in ()).throw(_api_status_error(500)))
 
     with pytest.raises(ProviderRetryable):
+        provider.complete([{"role": "user", "content": "u"}], JobParseResult)
+
+
+def test_complete_4xx_status_error_maps_to_unavailable() -> None:
+    """4xx（残高不足・無効リクエスト等）はリトライせず LLMUnavailableError にマップする。"""
+    provider = _make_provider(lambda **kwargs: (_ for _ in ()).throw(_api_status_error(400)))
+
+    with pytest.raises(LLMUnavailableError):
         provider.complete([{"role": "user", "content": "u"}], JobParseResult)
 
 
@@ -156,3 +186,28 @@ def test_structured_chat_claude_invalid_json_raises_parse_failed(
 
     with pytest.raises(ParseFailedError):
         structured_chat("sys", "user", JobParseResult)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ('{"a": 1}', '{"a": 1}'),  # そのまま
+        ('```json\n{"a": 1}\n```', '{"a": 1}'),  # json コードフェンス
+        ("```\n{\"a\": 1}\n```", '{"a": 1}'),  # 言語指定なしコードフェンス
+        ('以下が結果です。\n{"a": 1}\n以上です。', '{"a": 1}'),  # 前後の説明文
+        ('  {"a": 1}  ', '{"a": 1}'),  # 前後空白
+    ],
+)
+def test_extract_json_strips_wrapping(raw: str, expected: str) -> None:
+    """コードフェンス・前後の説明文・空白を剥がして JSON 本体を取り出す。"""
+    assert _extract_json(raw) == expected
+
+
+def test_complete_extracts_json_from_fenced_response() -> None:
+    """応答がコードフェンスで囲まれていても JSON 本体を返す。"""
+    fenced = f"```json\n{_VALID_JOB_JSON}\n```"
+    provider = _make_provider(lambda **kwargs: _text_response(fenced))
+
+    content = provider.complete([{"role": "user", "content": "u"}], JobParseResult)
+
+    assert content == _VALID_JOB_JSON

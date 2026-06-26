@@ -10,7 +10,7 @@ AIエンジニア採用スクリーニングシステム。「エンジニア選
 - **フロントエンド**: Next.js（App Router） / React / TypeScript / Tailwind CSS / shadcn/ui。データ取得は **TanStack Query**（スコア算出完了のポーリングに利用）。Lint は ESLint、整形は Prettier。パッケージ管理は **npm**。
 - **AI**: LLM provider は `LLM_PROVIDER` 環境変数で切り替える（構造化・マッチングとも一括）。
   - `ollama`（デフォルト）: **Ollama（ローカル）** のモデル `gemma4:e4b`。**ollama 公式 Python SDK** で `format` に JSON Schema を指定。Ollama は `localhost:11434` で常駐前提。
-  - `claude`: **Claude（Anthropic API）** のモデル `claude-opus-4-8`。**anthropic 公式 Python SDK** で `output_config.format` に JSON Schema を指定。`ANTHROPIC_API_KEY` が必要（API キー・通信コストが発生する）。
+  - `claude`: **Claude（Anthropic API）** のモデル `claude-opus-4-8`。**anthropic 公式 Python SDK** を使い、JSON Schema を system プロンプトに添えて JSON 出力を指示する（structured outputs は求人スキーマの複雑さ上限に抵触するため不使用）。`ANTHROPIC_API_KEY` が必要（API キー・通信コストが発生する）。
   - provider 差分は [backend/services/llm.py](backend/services/llm.py) の provider 実装に閉じ込め、検証 + リトライの共通ループは provider 非依存。
 
 ## 主要機能・処理フロー

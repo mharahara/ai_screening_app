@@ -15,7 +15,9 @@ provider 差分（SDK・構造化出力の指定方法・例外種別）は各 p
 （ParseFailedError / LLMTimeoutError / LLMUnavailableError）を送出する。
 """
 
+import json
 import logging
+import re
 from typing import Protocol, TypeVar
 
 import httpx
@@ -121,24 +123,31 @@ class OllamaProvider:
 class ClaudeProvider:
     """Claude（Anthropic API）provider。
 
-    `output_config.format` に JSON Schema を渡して出力を JSON に固定する。schema は
-    Anthropic SDK の `transform_schema` で structured outputs 互換に整形する
-    （`additionalProperties: false` 付与・`$ref` 展開など）。temperature は Opus 4.8 では
-    送れないため指定しない。決定論性は「同一スキーマ + プロンプト」で担保する。
+    構造化は **プロンプトに JSON Schema を添えて JSON 出力を指示**する方式で行う。
+    Anthropic の structured outputs（`output_config.format`）は schema の複雑さに上限が
+    あり、本プロジェクトの求人スキーマ（nullable + enum が多数）は「Schema is too complex」
+    で弾かれるため採用しない（公式ドキュメントの union/optional 上限・内部 grammar 上限）。
+    Claude は指示追従が強く、Schema をプロンプトに提示すれば高精度で JSON を返す。出力の
+    妥当性は `structured_chat` 側の検証 + リトライ + フィードバックで担保する。
+
+    temperature は Opus 4.8 では送れないため指定しない。決定論性は「同一スキーマ +
+    プロンプト」で担保する。
     """
 
     def __init__(self) -> None:
         import anthropic
 
-        # ANTHROPIC_API_KEY は SDK が環境変数から解決する。
-        self._client = anthropic.Anthropic()
+        # anthropic SDK は .env を読まないため、pydantic-settings で受け取ったキーを
+        # 明示的に渡す（None なら SDK が環境変数 ANTHROPIC_API_KEY から解決する）。
+        # 未設定でも初期化自体は成功し、認証不可は呼び出し時に表面化する（complete 側で扱う）。
+        self._client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
     def complete(self, messages: list[dict[str, str]], schema: type[BaseModel]) -> str:
         import anthropic
-        from anthropic.lib._parse._transform import transform_schema
         from anthropic.types import MessageParam
 
         # Anthropic は system を専用引数で受ける。messages 先頭の system を切り出す。
+        # JSON Schema は system 末尾に添えて、JSON のみの出力を明示指示する。
         system = ""
         chat_messages: list[MessageParam] = []
         for m in messages:
@@ -148,6 +157,7 @@ class ClaudeProvider:
                 chat_messages.append(
                     MessageParam(role=m["role"], content=m["content"])  # type: ignore[typeddict-item]
                 )
+        system = f"{system}\n\n{_json_schema_instruction(schema)}"
 
         try:
             response = self._client.messages.create(
@@ -155,13 +165,14 @@ class ClaudeProvider:
                 max_tokens=settings.claude_max_tokens,
                 system=system,
                 messages=chat_messages,
-                output_config={
-                    "format": {
-                        "type": "json_schema",
-                        "schema": transform_schema(schema),
-                    }
-                },
             )
+        except TypeError as exc:
+            # ANTHROPIC_API_KEY 未設定だと SDK が認証方法を解決できず TypeError を出す。
+            # リトライしても無駄なため接続不可（503 相当）として打ち切る。
+            logger.error("Claude の認証情報を解決できませんでした: %s", exc)
+            raise LLMUnavailableError(
+                "Claude を利用できません。ANTHROPIC_API_KEY が設定されているか確認してください。"
+            ) from exc
         except anthropic.APITimeoutError as exc:
             # APITimeoutError は APIConnectionError のサブクラス。接続不可より先に捕まえる。
             raise ProviderTimeout(str(exc)) from exc
@@ -172,13 +183,49 @@ class ClaudeProvider:
                 "Claude に接続できません。ANTHROPIC_API_KEY や通信を確認してください。"
             ) from exc
         except anthropic.APIStatusError as exc:
+            # 4xx（残高不足・権限・無効リクエスト・レート超過など）はリトライしても
+            # 回復しないため打ち切り、503 相当として扱う。5xx などサーバ一時障害は
+            # リトライ対象とする。
+            if 400 <= exc.status_code < 500:
+                logger.error("Claude API がリクエストを拒否しました: %s", exc)
+                raise LLMUnavailableError(
+                    f"Claude を利用できません（API エラー: {exc.message}）。"
+                ) from exc
             raise ProviderRetryable(str(exc)) from exc
 
-        # 構造化出力では先頭の text ブロックが妥当な JSON 文字列になる。
-        for block in response.content:
-            if block.type == "text":
-                return block.text
-        return ""
+        # text ブロックを連結し、コードフェンス等を剥がして JSON 本体を取り出す。
+        # 検証は structured_chat 側に委ねるため、ここでは候補テキストを返すだけ。
+        text = "".join(block.text for block in response.content if block.type == "text")
+        return _extract_json(text)
+
+
+def _json_schema_instruction(schema: type[BaseModel]) -> str:
+    """JSON Schema を提示し、JSON のみの出力を指示する system 追記文を組み立てる。"""
+    schema_json = json.dumps(schema.model_json_schema(), ensure_ascii=False)
+    return (
+        "出力は以下の JSON Schema に厳密に従った JSON のみとし、"
+        "前後の説明文・コードフェンス（```）・余計なキーを一切含めないでください。\n"
+        f"<json_schema>\n{schema_json}\n</json_schema>"
+    )
+
+
+_CODE_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.IGNORECASE)
+
+
+def _extract_json(text: str) -> str:
+    """応答テキストから JSON 本体を取り出す。
+
+    コードフェンスで囲まれていれば剥がし、前後に説明文が付いていれば最初の `{` から
+    対応する最後の `}` までを切り出す。検証自体は呼び出し側に任せるため、ここでは
+    「JSON らしき部分」を素直に抽出するに留める。
+    """
+    stripped = text.strip()
+    stripped = _CODE_FENCE_RE.sub("", stripped).strip()
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        return stripped[start : end + 1]
+    return stripped
 
 
 # --- provider 選択 ---------------------------------------------------------

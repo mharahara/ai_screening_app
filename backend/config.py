@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     ollama_timeout: float = 120.0
 
     # Claude（Anthropic API）連携。temperature は Opus 4.8 では送れないため持たない。
+    # anthropic SDK は .env を読まないため、API キーは pydantic-settings 経由で受け取り
+    # ClaudeProvider が SDK へ明示的に渡す（環境変数 ANTHROPIC_API_KEY からも読める）。
+    anthropic_api_key: str | None = None
     claude_model: str = "claude-opus-4-8"
     claude_max_tokens: int = 4096
 

@@ -31,7 +31,7 @@ uv run ruff check . && uv run mypy . && uv run pytest
 - ビジネスロジック（LLM 呼び出し・スコア算出）が `routers/` 直書きでなく `services/` に寄っているか。`main.py` が薄いか。
 - uv 管理になっているか（`pip` 直叩きや手書き依存がないか）。
 - 日時カラムが `DateTime(timezone=True)`、`Mapped[...]` 記法か。
-- LLM 呼び出しが **provider 抽象**（`services/llm.py`）経由で、構造化が JSON Schema を渡す形になっているか（自由文パースに頼っていないか）。provider は `LLM_PROVIDER` で `ollama`（公式 SDK の `format`）/ `claude`（anthropic 公式 SDK の `output_config.format`）を切り替える。検証・リトライの共通ループが provider 非依存に保たれているか。
+- LLM 呼び出しが **provider 抽象**（`services/llm.py`）経由で、構造化が JSON Schema を渡す形になっているか（自由文パースに頼っていないか）。provider は `LLM_PROVIDER` で `ollama`（公式 SDK の `format` に JSON Schema）/ `claude`（JSON Schema を system プロンプトに添えて JSON 出力指示。structured outputs は schema 複雑さ上限のため不使用）を切り替える。検証・リトライの共通ループが provider 非依存に保たれているか。
 - スコア算出が**バックグラウンド**で起動し、算出ステータスを持っているか（同期で重い処理をリクエスト内で完結させていないか）。
 - 求人が保存後に編集 API を持っていないか（削除のみのはず）。
 

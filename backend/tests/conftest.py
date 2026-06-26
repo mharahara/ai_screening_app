@@ -78,10 +78,13 @@ def client(test_engine, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]
 
 @pytest.fixture(autouse=True)
 def _no_real_ollama(monkeypatch: pytest.MonkeyPatch) -> None:
-    """安全網: テスト中に誤って実 Ollama を叩いたら即失敗させる。
+    """安全網: テスト中に誤って実 LLM を叩いたら即失敗させる。
 
-    各テストで `services.llm._client.chat` を上書きするのが前提だが、上書き漏れの
-    テストがネットワークに出ていかないようデフォルトを差し替えておく。
+    `.env` の `LLM_PROVIDER` に依存してテストがブレないよう、provider はデフォルト
+    （ollama）に固定し、provider 選択のモジュールキャッシュもリセットする。各テストで
+    `services.llm._client.chat` を上書きするのが前提だが、上書き漏れのテストが
+    ネットワークに出ていかないようデフォルトを差し替えておく。
+    Claude provider のテストは `services.llm._provider` を明示的に差し替える。
     """
 
     def _fail(*args: object, **kwargs: object) -> object:
@@ -91,5 +94,8 @@ def _no_real_ollama(monkeypatch: pytest.MonkeyPatch) -> None:
         )
 
     import services.llm as llm_module
+    from config import settings
 
+    monkeypatch.setattr(settings, "llm_provider", "ollama")
+    monkeypatch.setattr(llm_module, "_provider", None)
     monkeypatch.setattr(llm_module._client, "chat", _fail)
