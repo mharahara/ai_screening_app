@@ -21,7 +21,7 @@ model: sonnet
 
 要件に関係するコードが既にどこにあるかを、**パス付き**で特定する。再利用・変更すべき関数 / ファイルを挙げる（新規追加すべきか既存改修かの判断材料になる）。
 
-- backend（`backend/`）: `routers/`（jobs / candidates / rankings）/ `services/`（Ollama 連携・構造化・スコアリング）/ `models.py` / `schemas.py` / `config.py` / `db.py`。
+- backend（`backend/`）: `routers/`（jobs / candidates / rankings）/ `services/`（LLM provider 連携（`llm.py`）・構造化・スコアリング）/ `models.py` / `schemas.py` / `config.py` / `db.py`。
 - frontend（`frontend/`）: `app/`（App Router・各画面: candidates / jobs / rankings）/ `components/`（テーブル・ダイアログ等）/ `lib/`（API クライアント・共有型）。
 
 ### 2. 対象レイヤーの判定材料
@@ -34,11 +34,11 @@ model: sonnet
 
 ### 4. スコープ外への抵触
 
-計画書の「やらないこと」に触れそうなら警告する: **認証 / マルチユーザ / Docker / Alembic / PostgreSQL / 外部 LLM API / 求人の保存後編集**。`package.json` / `pyproject.toml` / import を確認し、要件がこれらを必要としそうなら明示する。
+計画書の「やらないこと」に触れそうなら警告する: **認証 / マルチユーザ / Docker / Alembic / PostgreSQL / 求人の保存後編集**。`package.json` / `pyproject.toml` / import を確認し、要件がこれらを必要としそうなら明示する。（LLM は Ollama・Claude の 2 provider が正式サポートで `LLM_PROVIDER` 切替。Claude / 外部 API はスコープ内。）
 
 ### 5. 受け入れ条件・テストに効く既存テストの所在
 
-- backend の単体テスト: `backend/tests/`（既存テストの対象・命名規約。Ollama 呼び出しはモック化されているか）。
+- backend の単体テスト: `backend/tests/`（既存テストの対象・命名規約。LLM provider 呼び出しはモック化されているか）。
 - frontend: 既存のテスト / 検証導線（あれば）。
 - この要件に関わる処理が既存テストでカバーされているか、新規テストが要りそうかを示す。
 

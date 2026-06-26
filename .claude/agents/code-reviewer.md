@@ -31,7 +31,7 @@ uv run ruff check . && uv run mypy . && uv run pytest
 - ビジネスロジック（LLM 呼び出し・スコア算出）が `routers/` 直書きでなく `services/` に寄っているか。`main.py` が薄いか。
 - uv 管理になっているか（`pip` 直叩きや手書き依存がないか）。
 - 日時カラムが `DateTime(timezone=True)`、`Mapped[...]` 記法か。
-- LLM 呼び出しが **ollama 公式 SDK** で、構造化が `format` に JSON Schema を渡す形になっているか（自由文パースに頼っていないか）。
+- LLM 呼び出しが **provider 抽象**（`services/llm.py`）経由で、構造化が JSON Schema を渡す形になっているか（自由文パースに頼っていないか）。provider は `LLM_PROVIDER` で `ollama`（公式 SDK の `format`）/ `claude`（anthropic 公式 SDK の `output_config.format`）を切り替える。検証・リトライの共通ループが provider 非依存に保たれているか。
 - スコア算出が**バックグラウンド**で起動し、算出ステータスを持っているか（同期で重い処理をリクエスト内で完結させていないか）。
 - 求人が保存後に編集 API を持っていないか（削除のみのはず）。
 
@@ -62,13 +62,13 @@ npm run lint && npm run build
 実装が `docs/03_how/` の設計方針に沿っているかを確認する。**変更レイヤーに対応するドキュメントだけを Read** して照合する（無関係なドキュメントまで漫然と読まない）:
 
 - API（エンドポイント・リクエスト/レスポンス形）を触った → [docs/03_how/04_api.md](docs/03_how/04_api.md)
-- Ollama 連携・構造化出力・プロンプト・JSON Schema を触った → [docs/03_how/02_ai.md](docs/03_how/02_ai.md)
+- LLM provider 連携・構造化出力・プロンプト・JSON Schema を触った → [docs/03_how/02_ai.md](docs/03_how/02_ai.md)
 - テーブル・カラム・リレーションを触った → [docs/03_how/03_data-model.md](docs/03_how/03_data-model.md)
 - 層構成・処理フロー・バックグラウンド起動方式を触った → [docs/03_how/01_architecture.md](docs/03_how/01_architecture.md)
 - セットアップ・起動・依存・モデル名を触った → [docs/03_how/05_setup.md](docs/03_how/05_setup.md)
-- テストを触った → [docs/03_how/06_testing.md](docs/03_how/06_testing.md)（Ollama/API をモックしているか、ステータス遷移・失敗系・契約・境界を押さえているか、LLM 応答内容の質に依存していないか）
+- テストを触った → [docs/03_how/06_testing.md](docs/03_how/06_testing.md)（LLM provider / API をモックしているか、ステータス遷移・失敗系・契約・境界を押さえているか、LLM 応答内容の質に依存していないか）
 
-**ドキュメントと食い違う実装は逸脱として指摘する**（例: 定められた JSON Schema・エンドポイント名やパス・データモデル・モデル名（`gemma4:e4b`）・接続方式からの乖離）。判断の方向は次の通り:
+**ドキュメントと食い違う実装は逸脱として指摘する**（例: 定められた JSON Schema・エンドポイント名やパス・データモデル・モデル名（ollama は `gemma4:e4b` / claude は `claude-opus-4-8`）・provider 接続方式からの乖離）。判断の方向は次の通り:
 
 - ドキュメントが正で実装が間違っている → 実装側の問題として指摘する（重大度は影響に応じて）。
 - 実装が妥当でドキュメントが古い疑いがある → 断定せず「ドキュメントとの不一致（要確認）」として挙げ、どちらを正とすべきかの判断材料を添える。コード書き換えはしない（読み取り専用）。
@@ -81,8 +81,9 @@ npm run lint && npm run build
 - Docker / docker-compose
 - Alembic（マイグレーション）
 - PostgreSQL（SQLite のみのはず）
-- 外部 LLM API・APIキー（Ollama でローカル完結のはず）
 - 求人の保存後編集（削除のみのはず）
+
+LLM provider は **Ollama（ローカル・デフォルト）と Claude（Anthropic API）の 2 つが正式サポート**で、`LLM_PROVIDER` で切り替える。Claude（外部 API・APIキー）の利用自体は逸脱ではない。ただし provider 抽象を壊す形（`routers/` から SDK 直 import、共通ループの provider 依存化など）は指摘する。
 
 `package.json` / `pyproject.toml` / import 文を Grep して、上記ライブラリの混入を検知する。
 

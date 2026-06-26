@@ -8,7 +8,10 @@ AIエンジニア採用スクリーニングシステム。「エンジニア選
 
 - **バックエンド**: FastAPI（Python） / SQLAlchemy / Pydantic / pydantic-settings。パッケージ管理は **uv**（`uv sync` / `uv run ...`、`pip` を直叩きしない）。Lint/Format は **Ruff**、型は **mypy**、テストは **pytest**。
 - **フロントエンド**: Next.js（App Router） / React / TypeScript / Tailwind CSS / shadcn/ui。データ取得は **TanStack Query**（スコア算出完了のポーリングに利用）。Lint は ESLint、整形は Prettier。パッケージ管理は **npm**。
-- **AI**: **Ollama（ローカル）** のモデル `gemma4:e4b`（2026-06 時点で最新）。接続は **ollama 公式 Python SDK** を使い、`format` に JSON Schema を指定して構造化出力を得る。Ollama は `localhost:11434` で常駐前提。
+- **AI**: LLM provider は `LLM_PROVIDER` 環境変数で切り替える（構造化・マッチングとも一括）。
+  - `ollama`（デフォルト）: **Ollama（ローカル）** のモデル `gemma4:e4b`。**ollama 公式 Python SDK** で `format` に JSON Schema を指定。Ollama は `localhost:11434` で常駐前提。
+  - `claude`: **Claude（Anthropic API）** のモデル `claude-opus-4-8`。**anthropic 公式 Python SDK** で `output_config.format` に JSON Schema を指定。`ANTHROPIC_API_KEY` が必要（API キー・通信コストが発生する）。
+  - provider 差分は [backend/services/llm.py](backend/services/llm.py) の provider 実装に閉じ込め、検証 + リトライの共通ループは provider 非依存。
 
 ## 主要機能・処理フロー
 
@@ -19,7 +22,9 @@ AIエンジニア採用スクリーニングシステム。「エンジニア選
 
 ## やらないこと（スコープ外）
 
-認証 / マルチユーザ / Docker / Alembic（マイグレーション。テーブルは起動時 `create_all`）/ PostgreSQL（SQLite のみ）/ 外部 LLM API（Ollama でローカル完結。APIキー・通信コストを発生させない）。
+認証 / マルチユーザ / Docker / Alembic（マイグレーション。テーブルは起動時 `create_all`）/ PostgreSQL（SQLite のみ）。
+
+LLM は **Ollama（ローカル・デフォルト）** または **Claude（Anthropic API）** を `LLM_PROVIDER` で選択する。`claude` 選択時は API キー・通信コストが発生する（個人利用・ローカル単一ユーザという前提自体は変わらない）。
 
 ## ドキュメント
 

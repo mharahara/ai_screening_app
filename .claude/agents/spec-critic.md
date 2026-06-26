@@ -36,7 +36,7 @@ model: sonnet
 
 計画書の「やらないこと」への抵触を双方向に突く:
 
-- **逸脱**: 認証 / マルチユーザ / Docker / Alembic / PostgreSQL / 外部 LLM API / 求人の保存後編集 を要求・前提していないか。`pyproject.toml` / `package.json` / import を確認して裏取りする。
+- **逸脱**: 認証 / マルチユーザ / Docker / Alembic / PostgreSQL / 求人の保存後編集 を要求・前提していないか。`pyproject.toml` / `package.json` / import を確認して裏取りする。（LLM provider は Ollama・Claude の 2 つが正式サポートなので、Claude / 外部 API の利用自体は逸脱ではない。）
 - **過小・肥大**: 1 つの issue に詰め込みすぎて `/work-issue` 一周で終わらない粒度になっていないか。逆に分割しすぎて単独では価値が出ないか。
 
 ### 4. 対象レイヤー・依存の整合
@@ -46,7 +46,7 @@ model: sonnet
 
 ### 5. 設計ドキュメント（`docs/03_how/`）との不整合
 
-ドラフトが触れるレイヤーに対応するドキュメントだけを Read して照合する。エンドポイント名・JSON Schema・データモデル・モデル名（`gemma4:e4b`）・接続方式と食い違う前提を置いていたら指摘する。ドキュメントが古い疑いがあるなら断定せず「要確認」とする。
+ドラフトが触れるレイヤーに対応するドキュメントだけを Read して照合する。エンドポイント名・JSON Schema・データモデル・モデル名（ollama は `gemma4:e4b` / claude は `claude-opus-4-8`）・provider 接続方式と食い違う前提を置いていたら指摘する。ドキュメントが古い疑いがあるなら断定せず「要確認」とする。
 
 ### 6. 既存 issue との重複・矛盾
 

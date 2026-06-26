@@ -3,8 +3,9 @@
 - 本番 DB を汚さないため、`get_db` 依存性をテスト用のインメモリ SQLite に差し替える。
   インメモリ SQLite は接続ごとに別 DB になり、TestClient が別スレッドを使い得るため、
   `StaticPool` + `check_same_thread=False` で 1 接続を共有して決定的にする。
-- Ollama は実際に叩かない。LLM 呼び出しのモックは各テスト側で
+- LLM は実際に叩かない。デフォルト provider（Ollama）の呼び出しは各テスト側で
   `services.llm._client.chat` を monkeypatch する（このファイルでは差し替えない）。
+  Claude provider のテストは `ClaudeProvider` の SDK クライアントをモックする。
 """
 
 from collections.abc import Iterator

@@ -7,7 +7,7 @@ RabbitPick/
 ├── backend/
 │   ├── pyproject.toml     # 依存定義・Ruff/mypy 設定（uv で管理）
 │   ├── uv.lock            # ロックファイル
-│   ├── .env               # モデル名・Ollama URL 等（pydantic-settings）
+│   ├── .env               # LLM_PROVIDER・モデル名・Ollama URL / Claude 設定等（pydantic-settings）
 │   ├── main.py            # FastAPI エントリポイント
 │   ├── config.py          # pydantic-settings の設定クラス
 │   ├── models.py          # SQLAlchemy モデル
@@ -25,9 +25,18 @@ RabbitPick/
 
 ## セットアップ・起動（想定）
 
+LLM provider は `.env` の `LLM_PROVIDER` で選択する（既定 `ollama`）。
+
 ```bash
+# --- provider=ollama（デフォルト）の場合 ---
 # 前提: Ollama を起動し、モデルを取得しておく
 ollama pull gemma4:e4b
+
+# --- provider=claude の場合 ---
+# backend/.env に以下を設定（ANTHROPIC_API_KEY は anthropic SDK が直接読む）
+#   LLM_PROVIDER=claude
+#   ANTHROPIC_API_KEY=sk-ant-...
+# CLAUDE_MODEL / CLAUDE_MAX_TOKENS は任意（既定: claude-opus-4-8 / 4096）
 
 # バックエンド（uv）
 cd backend

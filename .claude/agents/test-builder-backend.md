@@ -1,6 +1,6 @@
 ---
 name: test-builder-backend
-description: RabbitPick の backend/ 配下の変更に対して pytest のテストを書く/直すときに使う。テスト方針 docs/03_how/06_testing.md に沿って、Ollama をモックしステータス遷移・失敗系・API 契約を検証する。実装後・レビュー前のテスト工程で委譲する。
+description: RabbitPick の backend/ 配下の変更に対して pytest のテストを書く/直すときに使う。テスト方針 docs/03_how/06_testing.md に沿って、LLM provider（Ollama / Claude）をモックしステータス遷移・失敗系・API 契約を検証する。実装後・レビュー前のテスト工程で委譲する。
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: inherit
 ---
@@ -28,12 +28,14 @@ model: inherit
 4. **スコアの境界・欠損**: 0〜100 の範囲、候補者ゼロ件・スコア未算出（`done` でない）候補のランキングが破綻しないこと。
 5. **構造化結果の通り道**: `model_validate_json` で復元した結果が保存・スコアリングに正しく渡ること。
 
-## Ollama のモック方針（厳守）
+## LLM provider のモック方針（厳守）
 
-- **Ollama を実際に叩くテストは書かない**。LLM 呼び出しは `services/`（集約 client、例: `services/llm.py`）に1箇所で集約されている前提で、そこを **monkeypatch / モック**して固定結果を返させる。
+- **LLM を実際に叩くテストは書かない**（Ollama も Claude も）。LLM 呼び出しは `services/llm.py` に1箇所集約されている前提で、そこを **monkeypatch / モック**して固定結果を返させる。
+  - デフォルト provider（Ollama）: `services.llm._client.chat` を差し替える（既存テストの流儀）。`conftest.py` の `_no_real_ollama` が上書き漏れを安全網で落とす。
+  - Claude provider: `ClaudeProvider` の SDK クライアント（`messages.create`）を差し替える。`structured_chat` 統合を試すなら `services.llm._provider` を差し替える。
 - 正常系は妥当な JSON を返すモック、失敗系は `ValidationError` を誘発する壊れた出力・接続例外を投げるモックを用意する。
-- **LLM の応答内容の良し悪しは検証しない**（モデル依存で不安定）。検証するのは処理・遷移・契約。
-- モデル名・URL・タイムアウトは `config.py`（pydantic-settings）由来。テストで固定値を散らかさず、必要なら設定をオーバーライドする。
+- **LLM の応答内容の良し悪しは検証しない**（モデル依存で不安定）。検証するのは処理・遷移・契約、および provider の例外マッピング（接続不可 → `LLMUnavailableError` 等）。
+- provider 選択・モデル名・URL・タイムアウトは `config.py`（pydantic-settings）由来。テストで固定値を散らかさず、必要なら設定をオーバーライドする。
 
 ## 作業フロー
 
@@ -48,7 +50,7 @@ model: inherit
 
 ## やらないこと
 
-- Ollama を実起動して応答を検証する E2E。
+- Ollama / Claude を実起動・実 API で応答を検証する E2E。
 - 認証 / マルチユーザ前提のテスト（機能自体がスコープ外）。
 - カバレッジ達成そのものを目的にしたテストの量産。
 - プロダクトコードの仕様変更（テスト都合での挙動変更）。必要なら止めてオーケストレーターに相談する。
