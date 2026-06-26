@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from db import init_db
-from routers import jobs
+from routers import candidates, jobs
 
 
 @asynccontextmanager
@@ -35,6 +35,7 @@ app.add_middleware(
 )
 
 app.include_router(jobs.router)
+app.include_router(candidates.router)
 
 
 @app.get("/health")

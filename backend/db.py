@@ -6,11 +6,25 @@ FastAPI の依存性注入には `get_db()` を使う。
 """
 
 from collections.abc import Iterator
+from typing import Any
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from config import settings
+
+
+# SQLite はデフォルトで外部キー制約（ON DELETE CASCADE 等）を無効化している。
+# 接続ごとに `PRAGMA foreign_keys=ON` を発行して有効化する。本番 engine だけでなく
+# テストが create_engine で別途生成するインメモリ engine にも効くよう、特定の engine
+# インスタンスではなくグローバルな Engine クラスに対してリスナーを貼る。
+@event.listens_for(Engine, "connect")
+def _set_sqlite_pragma(dbapi_connection: Any, connection_record: Any) -> None:
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
 
 # SQLite はデフォルトで接続を生成したスレッドでしか使えない。
 # FastAPI はリクエストごとに別スレッドを使い得るため、check_same_thread を無効化する。
