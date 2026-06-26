@@ -9,7 +9,9 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
+from config import settings
 from db import init_db
 from routers import jobs
 
@@ -22,6 +24,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="RabbitPick API", lifespan=lifespan)
+
+# frontend（localhost:3000）からブラウザ経由で API を叩けるよう CORS を許可する。
+# 認証がないため allow_credentials は付けない。
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_allow_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(jobs.router)
 

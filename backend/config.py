@@ -27,5 +27,9 @@ class Settings(BaseSettings):
     # データベース（SQLite）
     database_url: str = "sqlite:///./rabbitpick.db"
 
+    # CORS。frontend（Next.js）からブラウザで API を叩けるよう許可するオリジン。
+    # 個人利用・ローカル単一ユーザ前提なので 1 オリジンで十分。
+    cors_allow_origins: list[str] = ["http://localhost:3000"]
+
 
 settings = Settings()
