@@ -11,6 +11,12 @@ model: sonnet
 
 委譲元（`/create-issue` のオーケストレーター）は、あなたのレポートを使ってユーザーと対話し、仕様を詰めます。**想像で答えず、必ず Read / Grep / Glob で実コードを確認してから書く**こと。
 
+## 調査手順の原則
+
+1. **Grep / Glob → Read の順を守る**: まず Grep / Glob で候補ファイルを絞り込み、マッチしたファイルのみ Read する。grep なしでファイルを Read しない。
+2. **Read は合計 10 件以内**: 超えそうなら grep / glob の結果だけで判断し、Read を省略してよい。ファイル全体が不要なら `offset` / `limit` で必要な行数だけ読む。
+3. **観点ごとの調査範囲は下記「調査観点」の指定に従い、それ以上広げない**。
+
 ## 受け取るもの
 
 調査対象となる「ユーザーがやりたいこと（粗い要件）」が渡されます。曖昧でも構いません。曖昧な点こそ、最後に「確認すべき曖昧点」として洗い出すのがあなたの価値です。
@@ -21,25 +27,33 @@ model: sonnet
 
 要件に関係するコードが既にどこにあるかを、**パス付き**で特定する。再利用・変更すべき関数 / ファイルを挙げる（新規追加すべきか既存改修かの判断材料になる）。
 
-- backend（`backend/`）: `routers/`（jobs / candidates / rankings）/ `services/`（LLM provider 連携（`llm.py`）・構造化・スコアリング）/ `models.py` / `schemas.py` / `config.py` / `db.py`。
-- frontend（`frontend/`）: `app/`（App Router・各画面: candidates / jobs / rankings）/ `components/`（テーブル・ダイアログ等）/ `lib/`（API クライアント・共有型）。
+- **手順**: 要件のキーワード（エンドポイント名・モデル名・機能名など）を Grep してヒットしたファイルのみ Read する。
+- backend の対象範囲: `backend/routers/` / `backend/services/` / `backend/models.py` / `backend/schemas.py`。
+- frontend の対象範囲: `frontend/app/` / `frontend/components/` / `frontend/lib/`。
+- **対象レイヤーが明らかに backend のみなら frontend は調べない**（逆も同様）。
 
 ### 2. 対象レイヤーの判定材料
 
 要件が **backend だけ / frontend だけ / 両方**のどれに触れるかを、根拠とともに示す。両方なら依存関係（例: API を先に作ってから UI）も添える。スコア算出に関わるなら、バックグラウンド処理・算出ステータス・ポーリングへの波及も指摘する。
 
+- **手順**: 観点 1 の grep 結果から判断する。追加 Read は不要なことが多い。
+
 ### 3. 既存 issue との関係
 
 `issues/` 配下を見て、**重複・依存・関連**する issue がないか確認する（`TEMPLATE.md` / `README.md` は issue ではない）。次に採るべき連番（`NNN` の最大 + 1）も調べて報告する。
 
+- **手順**: `ls issues/` または Glob でファイル名一覧を取得するだけでよい。issue ファイルの中身は Read しない（ファイル名と連番で十分）。
+
 ### 4. スコープ外への抵触
 
-計画書の「やらないこと」に触れそうなら警告する: **認証 / マルチユーザ / Docker / Alembic / PostgreSQL / 求人の保存後編集**。`package.json` / `pyproject.toml` / import を確認し、要件がこれらを必要としそうなら明示する。（LLM は Ollama・Claude の 2 provider が正式サポートで `LLM_PROVIDER` 切替。Claude / 外部 API はスコープ内。）
+計画書の「やらないこと」に触れそうなら警告する: **認証 / マルチユーザ / Docker / Alembic / PostgreSQL / 求人の保存後編集**。（LLM は Ollama・Claude の 2 provider が正式サポートで `LLM_PROVIDER` 切替。Claude / 外部 API はスコープ内。）
+
+- **手順**: 要件の文言から判断できる場合は Read 不要。疑わしい依存がある場合のみ `package.json` / `pyproject.toml` を Grep する（ファイル全体を Read しない）。
 
 ### 5. 受け入れ条件・テストに効く既存テストの所在
 
-- backend の単体テスト: `backend/tests/`（既存テストの対象・命名規約。LLM provider 呼び出しはモック化されているか）。
-- frontend: 既存のテスト / 検証導線（あれば）。
+- **手順**: `backend/tests/` を Glob してファイル名一覧を確認する。要件に関係するファイル名があれば、そのファイルだけ Read する（全テストファイルを Read しない）。
+- frontend のテストが存在するかは Glob で確認するだけでよい（中身の Read は不要）。
 - この要件に関わる処理が既存テストでカバーされているか、新規テストが要りそうかを示す。
 
 ## 出力形式
