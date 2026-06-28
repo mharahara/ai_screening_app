@@ -6,18 +6,25 @@
 docs/03_how/02_ai.md のエラーコードへ変換する責務に留める。
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
 
 from db import get_db
 from models import Candidate, Job
-from schemas import CandidateCreate, CandidateOut, CandidateParseResult
+from schemas import (
+    CandidateCreate,
+    CandidateDetailOut,
+    CandidateOut,
+    CandidateParseResult,
+)
 from services.llm import (
     LLMTimeoutError,
     LLMUnavailableError,
     ParseFailedError,
 )
+from services.matching import match_candidate
 from services.structuring import structure_candidate
 
 router = APIRouter(prefix="/candidates", tags=["candidates"])
@@ -85,12 +92,15 @@ def parse_candidate(req: CandidateParseRequest) -> CandidateParseResponse:
 
 
 @router.post("", response_model=CandidateOut, status_code=status.HTTP_201_CREATED)
-def create_candidate(payload: CandidateCreate, db: Session = Depends(get_db)) -> Candidate:
-    """構造化済みの候補者を保存する。
+def create_candidate(
+    payload: CandidateCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+) -> Candidate:
+    """構造化済みの候補者を保存し、バックグラウンドでスコア算出を起動する。
 
     紐づく求人が存在しない場合は 404。
-    NOTE: 後続のマッチング issue では、ここで BackgroundTasks にスコア算出
-    （match_candidate）を登録して非同期起動する。本 issue ではスコープ外。
+    保存後すぐ 201 を返し、スコア算出は BackgroundTasks で非同期実行する。
     """
     if db.get(Job, payload.job_id) is None:
         raise HTTPException(
@@ -102,7 +112,27 @@ def create_candidate(payload: CandidateCreate, db: Session = Depends(get_db)) ->
     db.add(candidate)
     db.commit()
     db.refresh(candidate)
+
+    background_tasks.add_task(match_candidate, candidate.id)
+
     return candidate
+
+
+@router.get("/{candidate_id}/detail", response_model=CandidateDetailOut)
+def get_candidate_detail(candidate_id: int, db: Session = Depends(get_db)) -> CandidateDetailOut:
+    """候補者の詳細情報とスコアを返す。
+
+    存在しない candidate_id は 404。スコアが未算出の場合は score が null。
+    """
+    candidate = db.scalar(
+        select(Candidate).options(selectinload(Candidate.score)).where(Candidate.id == candidate_id)
+    )
+    if candidate is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="候補者が見つかりません。",
+        )
+    return CandidateDetailOut.model_validate(candidate)
 
 
 @router.delete("/{candidate_id}", status_code=status.HTTP_204_NO_CONTENT)

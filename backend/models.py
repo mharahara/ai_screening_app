@@ -5,10 +5,11 @@ JSON カラムで保持する。日時カラムは `DateTime(timezone=True)`。
 
 `Job` と `Candidate` を定義する。求人削除時は `candidates.job_id` の
 ON DELETE CASCADE と Job 側 relationship の `cascade="all, delete-orphan"` で
-候補者を一括削除する。Score の本体実装は後続 issue が行う。
+候補者を一括削除する。
 """
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -100,3 +101,50 @@ class Candidate(Base):
     )
 
     job: Mapped["Job"] = relationship(back_populates="candidates")
+
+    # Score relationship（1候補者に1スコア）。候補者削除時にカスケード削除する。
+    score: Mapped["Score | None"] = relationship(
+        back_populates="candidate",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+
+class Score(Base):
+    """マッチングスコア（候補者 × 求人の評価結果）。
+
+    `candidate_id` で候補者に紐づく（1対1）。候補者削除時は FK の ON DELETE CASCADE で
+    一括削除される。`requirement_checks` は各必須スキルの充足判定（JSON 配列）。
+    再評価時は candidate_id 単位で上書き（upsert）する。
+    """
+
+    __tablename__ = "scores"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidates.id", ondelete="CASCADE"),
+    )
+
+    # LLM が算出した各軸スコア（0〜100）。
+    total_score: Mapped[int] = mapped_column()
+    skill_score: Mapped[int] = mapped_column()
+    experience_score: Mapped[int] = mapped_column()
+    industry_score: Mapped[int] = mapped_column()
+    position_score: Mapped[int] = mapped_column()
+
+    # 必須要件充足情報。
+    required_met: Mapped[int] = mapped_column()  # 充足件数
+    required_total: Mapped[int] = mapped_column()  # 全件数
+
+    # 各必須スキルの充足判定（RequirementCheck を dict にシリアライズして保存）。
+    requirement_checks: Mapped[list[Any]] = mapped_column(JSON, default=list)
+
+    # LLM が生成したサマリー（日本語）。
+    strengths: Mapped[str] = mapped_column()
+    concerns: Mapped[str] = mapped_column()
+    interview_points: Mapped[str] = mapped_column()
+
+    scored_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    candidate: Mapped["Candidate"] = relationship(back_populates="score")

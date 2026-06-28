@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     # 構造化・マッチングの LLM 呼び出しリトライ上限（初回 + リトライ）。
     parse_max_retries: int = 3
 
+    # マッチングスコアの各軸重み（合計は正規化するため和が 1.0 でなくてもよい）。
+    match_weight_skill: float = 0.40
+    match_weight_experience: float = 0.20
+    match_weight_industry: float = 0.20
+    match_weight_position: float = 0.20
+
     # データベース（SQLite）
     database_url: str = "sqlite:///./rabbitpick.db"
 

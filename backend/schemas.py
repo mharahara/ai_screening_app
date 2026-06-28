@@ -8,7 +8,7 @@ enum の候補値・フィールド名・単位は docs/03_how/02_ai.md / 03_dat
 定義に厳密に合わせる（フロント表示・DB 値との契約のため）。
 
 候補者（Candidate）の構造化結果・保存/出力スキーマもここに定義する。
-マッチング（Score）のスキーマは後続 issue で追加する。
+マッチング（Score）のスキーマもここに定義する。
 """
 
 from datetime import datetime
@@ -214,3 +214,95 @@ class JobSummary(BaseModel):
     id: int
     title: str | None
     created_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# マッチング（Score）関連スキーマ
+# ---------------------------------------------------------------------------
+
+
+class RequirementStatus(StrEnum):
+    """必須要件の充足状態。"""
+
+    MET = "充足"
+    NOT_MET = "未充足"
+
+
+class RequirementCheck(BaseModel):
+    """必須要件1件の充足判定（LLM 出力の一部）。"""
+
+    requirement: str = Field(description="必須要件のラベル（求人の required_skills の各要素）。")
+    status: RequirementStatus = Field(description="充足 / 未充足。")
+    evidence: str | None = Field(
+        default=None,
+        description="充足/未充足と判断した根拠（候補者データ中の該当箇所）。該当なければ null。",
+    )
+
+
+class MatchResult(BaseModel):
+    """マッチング評価の LLM 出力スキーマ。
+
+    各軸スコア・必須要件チェック・サマリーを返す。
+    総合スコア・必須充足率はコード側で算出するため LLM 出力には含めない。
+    """
+
+    skill_score: int = Field(ge=0, le=100, description="スキルスコア（0〜100）。")
+    experience_score: int = Field(ge=0, le=100, description="経験年数スコア（0〜100）。")
+    industry_score: int = Field(ge=0, le=100, description="業界経験スコア（0〜100）。")
+    position_score: int = Field(ge=0, le=100, description="ポジションレベルスコア（0〜100）。")
+    requirement_checks: list[RequirementCheck] = Field(
+        default_factory=list,
+        description=(
+            "求人の必須スキル全件に対する充足判定。"
+            "required_skills の各要素を1件ずつ判定し、漏れなく列挙する。"
+        ),
+    )
+    strengths: str = Field(description="候補者の強み（日本語の文章）。")
+    concerns: str = Field(description="候補者の懸念点（日本語の文章）。")
+    interview_points: str = Field(description="面接での確認事項（日本語の文章）。")
+
+
+class ScoreOut(BaseModel):
+    """Score モデルの出力用スキーマ（全フィールド）。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    candidate_id: int
+    total_score: int
+    skill_score: int
+    experience_score: int
+    industry_score: int
+    position_score: int
+    required_met: int
+    required_total: int
+    requirement_checks: list[RequirementCheck]
+    strengths: str
+    concerns: str
+    interview_points: str
+    scored_at: datetime
+
+
+class CandidateRankingItem(BaseModel):
+    """ランキング一覧の1行（候補者 + スコアサマリー）。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    candidate_id: int
+    name: str | None
+    created_at: datetime
+    total_score: int | None
+    skill_score: int | None
+    experience_score: int | None
+    industry_score: int | None
+    position_score: int | None
+    required_met: int | None
+    required_total: int | None
+
+
+class CandidateDetailOut(CandidateOut):
+    """候補者詳細出力用スキーマ（CandidateOut の全フィールド + スコア）。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    score: ScoreOut | None = None
