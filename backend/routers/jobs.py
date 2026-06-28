@@ -9,11 +9,17 @@ docs/03_how/02_ai.md のエラーコードへ変換する責務に留める。
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from db import get_db
-from models import Job
-from schemas import JobCreate, JobOut, JobParseResult, JobSummary
+from models import Candidate, Job
+from schemas import (
+    CandidateRankingItem,
+    JobCreate,
+    JobOut,
+    JobParseResult,
+    JobSummary,
+)
 from services.llm import (
     LLMTimeoutError,
     LLMUnavailableError,
@@ -103,9 +109,46 @@ def list_jobs(db: Session = Depends(get_db)) -> list[Job]:
 
 @router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_job(job_id: int, db: Session = Depends(get_db)) -> None:
-    """求人を削除する。関連する候補者・スコアはカスケード削除（後続 issue で関係定義）。"""
+    """求人を削除する。関連する候補者・スコアはカスケード削除。"""
     job = db.get(Job, job_id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="求人が見つかりません。")
     db.delete(job)
     db.commit()
+
+
+@router.get("/{job_id}/rankings", response_model=list[CandidateRankingItem])
+def get_rankings(job_id: int, db: Session = Depends(get_db)) -> list[CandidateRankingItem]:
+    """指定求人の候補者をスコア降順で返す（スコア未算出は末尾）。
+
+    存在しない job_id は 404。スコアが未算出の候補者も含め全候補者を返す。
+    """
+    if db.get(Job, job_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="求人が見つかりません。")
+
+    candidates = list(
+        db.scalars(
+            select(Candidate)
+            .options(selectinload(Candidate.score))
+            .where(Candidate.job_id == job_id)
+        ).all()
+    )
+
+    items = [
+        CandidateRankingItem(
+            candidate_id=c.id,
+            name=c.name,
+            created_at=c.created_at,
+            total_score=c.score.total_score if c.score is not None else None,
+            skill_score=c.score.skill_score if c.score is not None else None,
+            experience_score=c.score.experience_score if c.score is not None else None,
+            industry_score=c.score.industry_score if c.score is not None else None,
+            position_score=c.score.position_score if c.score is not None else None,
+            required_met=c.score.required_met if c.score is not None else None,
+            required_total=c.score.required_total if c.score is not None else None,
+        )
+        for c in candidates
+    ]
+
+    # total_score 降順（None は末尾）でソートする。
+    return sorted(items, key=lambda x: (x.total_score is None, -(x.total_score or 0)))
