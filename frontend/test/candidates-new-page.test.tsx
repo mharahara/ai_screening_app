@@ -352,6 +352,42 @@ describe("保存の状態遷移", () => {
     ).toBeInTheDocument();
   });
 
+  it("保存成功後にランキングへの正しい job_id つきリンクが表示される", async () => {
+    server.use(
+      http.post(`${API_BASE_URL}/candidates/parse`, () =>
+        HttpResponse.json(PARSE_RESPONSE),
+      ),
+      http.post(`${API_BASE_URL}/candidates`, async ({ request }) => {
+        const body = await request.json();
+        return HttpResponse.json(
+          { ...(body as object), id: 1, created_at: "2026-06-26T00:00:00Z" },
+          { status: 201 },
+        );
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText("応募書類テキスト"), "原文");
+    await user.click(screen.getByRole("button", { name: "解析する" }));
+
+    await screen.findByLabelText("氏名");
+
+    // 求人 #1 を選択する。
+    await user.click(screen.getByRole("combobox"));
+    const option = await screen.findByRole("option", { name: /Backend Engineer #1/ });
+    await user.click(option);
+
+    // 保存する。
+    await user.click(screen.getByRole("button", { name: "保存する" }));
+
+    // 成功後、選択した求人 id 付きのランキングリンクが表示される。
+    // base-ui の Button は Link を role="button" の <a> として描画する。
+    const link = await screen.findByRole("button", { name: "ランキングを見る" });
+    expect(link).toHaveAttribute("href", "/jobs/1/rankings");
+  });
+
   it("POST /candidates 失敗時に「保存に失敗しました。再試行してください。」が表示される", async () => {
     server.use(
       http.post(`${API_BASE_URL}/candidates/parse`, () =>

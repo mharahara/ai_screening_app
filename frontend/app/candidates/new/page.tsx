@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { ApiError } from "@/lib/api";
@@ -97,6 +98,7 @@ export default function CandidateNewPage() {
   const [hasParsed, setHasParsed] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState(false);
   const [selectedJobId, setSelectedJobId] = React.useState<number | null>(null);
+  const [savedJobId, setSavedJobId] = React.useState<number | null>(null);
 
   function patch<K extends keyof CandidateParseResult>(
     key: K,
@@ -128,7 +130,9 @@ export default function CandidateNewPage() {
         raw_text: savedRawText,
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // ランキング誘導用に保存先の求人 id を控えてから選択状態をリセットする。
+      setSavedJobId(data.job_id);
       setForm(EMPTY_FORM);
       setRawText("");
       setSavedRawText("");
@@ -364,9 +368,21 @@ export default function CandidateNewPage() {
           )}
 
           {saveSuccess && (
-            <p role="status" className="text-sm text-green-600">
-              候補者を保存しました。
-            </p>
+            <div className="flex flex-col gap-2">
+              <p role="status" className="text-sm text-green-600">
+                候補者を保存しました。
+              </p>
+              {savedJobId !== null && (
+                <Button
+                  render={<Link href={`/jobs/${savedJobId}/rankings`} />}
+                  nativeButton={false}
+                  variant="outline"
+                  className="w-fit"
+                >
+                  ランキングを見る
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </section>
