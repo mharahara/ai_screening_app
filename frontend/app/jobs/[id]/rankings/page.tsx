@@ -203,24 +203,25 @@ function JobField({
   );
 }
 
-/** 求人フィールド（タグ配列）。空配列は「未記載」表示。 */
+/** 求人フィールド（タグ配列）。空配列・null は「未記載」表示。 */
 function JobTagField({
   label,
   values,
   className,
 }: {
   label: string;
-  values: string[];
+  values: string[] | null | undefined;
   className?: string;
 }) {
+  const safeValues = values ?? [];
   return (
     <div className={className}>
       <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className="mt-1 flex flex-wrap gap-1.5">
-        {values.length === 0 ? (
+        {safeValues.length === 0 ? (
           <span className="text-sm text-muted-foreground">未記載</span>
         ) : (
-          values.map((value) => (
+          safeValues.map((value) => (
             <span
               key={value}
               className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs"
