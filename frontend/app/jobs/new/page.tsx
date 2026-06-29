@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/tag-input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -244,7 +245,70 @@ export default function JobNewPage() {
 
         {/* 右: 構造化結果の編集フォーム */}
         <div className="flex flex-col gap-4">
-          {!hasParsed ? (
+          {parseMutation.isPending && !hasParsed ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label>タイトル</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>業務内容</Label>
+                <Skeleton className="h-20 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>必須スキル</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>歓迎スキル</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>資格要件</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>求める人物像</Label>
+                <Skeleton className="h-20 w-full" />
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label>雇用形態</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>リモート可否</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>ポジションレベル</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label>単価下限（万円/月）</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>単価上限（万円/月）</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>最低経験年数（年）</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>勤務地</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>求める業界経験</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+            </div>
+          ) : !hasParsed ? (
             <p className="text-sm text-muted-foreground">
               「構造化する」を実行すると、ここに編集フォームが表示されます。
             </p>
