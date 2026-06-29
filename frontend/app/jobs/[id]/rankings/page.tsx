@@ -109,6 +109,131 @@ export default function JobRankingsPage() {
   );
 }
 
+/** 求人要件確認パネル（折りたたみ可能・読み取り専用）。 */
+function JobDetailsPanel({ job }: { job: JobOut }) {
+  const [open, setOpen] = React.useState(false);
+  const [rawOpen, setRawOpen] = React.useState(false);
+
+  return (
+    <div className="rounded-lg border">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium hover:bg-muted/30"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <span>求人要件を確認する</span>
+        <span className="text-muted-foreground">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div className="border-t px-4 py-4">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+            <JobField label="タイトル" value={job.title} className="sm:col-span-2" />
+            <JobField label="説明" value={job.description} className="sm:col-span-2" />
+            <JobTagField label="必須スキル" values={job.required_skills} className="sm:col-span-2" />
+            <JobTagField label="歓迎スキル" values={job.preferred_skills} className="sm:col-span-2" />
+            <JobField label="理想の人物像" value={job.ideal_profile} className="sm:col-span-2" />
+            <JobField label="雇用形態" value={job.employment_type} />
+            <JobField label="勤務地" value={job.location} />
+            <JobField label="リモート" value={job.remote_work} />
+            <JobField
+              label="単価（最低）"
+              value={job.rate_min !== null ? `${job.rate_min} 万円/月` : null}
+            />
+            <JobField
+              label="単価（最高）"
+              value={job.rate_max !== null ? `${job.rate_max} 万円/月` : null}
+            />
+            <JobField
+              label="最低経験年数"
+              value={job.min_experience_years !== null ? `${job.min_experience_years} 年` : null}
+            />
+            <JobField label="ポジションレベル" value={job.position_level} />
+            <JobField label="業界経験" value={job.industry_experience} />
+            <JobTagField label="資格" values={job.certifications} className="sm:col-span-2" />
+          </dl>
+
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setRawOpen(true)}
+            >
+              原文を見る
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={rawOpen} onOpenChange={(o) => { if (!o) setRawOpen(false); }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>求人票 原文</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <pre className="rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">
+              {job.raw_text}
+            </pre>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/** 求人フィールド（単一値）。null は「未記載」表示。 */
+function JobField({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: string | null | undefined;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 text-sm">
+        {value != null ? value : <span className="text-muted-foreground">未記載</span>}
+      </dd>
+    </div>
+  );
+}
+
+/** 求人フィールド（タグ配列）。空配列は「未記載」表示。 */
+function JobTagField({
+  label,
+  values,
+  className,
+}: {
+  label: string;
+  values: string[];
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+      <dd className="mt-1 flex flex-wrap gap-1.5">
+        {values.length === 0 ? (
+          <span className="text-sm text-muted-foreground">未記載</span>
+        ) : (
+          values.map((value) => (
+            <span
+              key={value}
+              className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs"
+            >
+              {value}
+            </span>
+          ))
+        )}
+      </dd>
+    </div>
+  );
+}
+
 /** ランキング一覧テーブル。 */
 function RankingsTable({
   items,
