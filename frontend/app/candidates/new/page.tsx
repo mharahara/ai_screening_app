@@ -272,7 +272,7 @@ export default function CandidateNewPage() {
           </div>
           <Textarea
             id="raw-text"
-            className="min-h-72"
+            className="min-h-72 max-h-72"
             placeholder="職務経歴書・履歴書の本文を貼り付けてください。"
             value={rawText}
             onChange={(e) => setRawText(e.target.value)}
