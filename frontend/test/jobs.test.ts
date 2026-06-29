@@ -30,9 +30,6 @@ const PARSE_RESULT: JobParseResponse = {
   required_skills: ["Python", "FastAPI"],
   preferred_skills: ["AWS"],
   ideal_profile: "自走できる人",
-  employment_type: "業務委託",
-  location: "東京",
-  remote_work: "フルリモート",
   rate_min: 60,
   rate_max: 90,
   min_experience_years: 3,
@@ -96,9 +93,6 @@ describe("createJob", () => {
       required_skills: PARSE_RESULT.required_skills,
       preferred_skills: PARSE_RESULT.preferred_skills,
       ideal_profile: PARSE_RESULT.ideal_profile,
-      employment_type: PARSE_RESULT.employment_type,
-      location: PARSE_RESULT.location,
-      remote_work: PARSE_RESULT.remote_work,
       rate_min: PARSE_RESULT.rate_min,
       rate_max: PARSE_RESULT.rate_max,
       min_experience_years: PARSE_RESULT.min_experience_years,
@@ -106,6 +100,7 @@ describe("createJob", () => {
       industry_experience: PARSE_RESULT.industry_experience,
       certifications: PARSE_RESULT.certifications,
       raw_text: PARSE_RESULT.raw_text,
+      matching_instructions: null,
     };
 
     let receivedBody: unknown;

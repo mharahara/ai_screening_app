@@ -28,8 +28,6 @@ _VALID_PARSE = JobParseResult(
     description="API 開発",
     required_skills=["Python", "FastAPI"],
     preferred_skills=["Go"],
-    employment_type=None,
-    remote_work=None,
     certifications=["AWS SAA"],
 )
 
@@ -160,13 +158,6 @@ def test_create_job_type_mismatch_is_422(client: TestClient) -> None:
     assert resp.status_code == 422
 
 
-def test_create_job_invalid_enum_is_422(client: TestClient) -> None:
-    """enum 範囲外（employment_type）→ 422。"""
-    payload = {**_VALID_JOB_PAYLOAD, "employment_type": "なんでもない"}
-    resp = client.post("/jobs", json=payload)
-    assert resp.status_code == 422
-
-
 # --- GET /jobs ---------------------------------------------------------------
 
 
@@ -291,9 +282,6 @@ def test_get_job_returns_summary_fields(client: TestClient) -> None:
         "required_skills",
         "preferred_skills",
         "ideal_profile",
-        "employment_type",
-        "location",
-        "remote_work",
         "rate_min",
         "rate_max",
         "min_experience_years",

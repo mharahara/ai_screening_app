@@ -11,14 +11,10 @@ import {
   deleteJob,
   listJobs,
   parseJob,
-  EMPLOYMENT_TYPES,
-  REMOTE_WORKS,
   POSITION_LEVELS,
-  type EmploymentType,
   type JobParseResult,
   type JobParseResponse,
   type PositionLevel,
-  type RemoteWork,
 } from "@/lib/jobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,17 +55,8 @@ const JOB_TEMPLATE = `【求人タイトル】
 【歓迎スキル】
 ・
 
-【雇用形態】
-業務委託 / 正社員 / 契約社員
-
-【リモート可否】
-フルリモート / 一部リモート / 出社
-
 【単価（万円/月）】
 下限: 　上限:
-
-【勤務地】
-
 
 【最低経験年数】
 〇年以上
@@ -93,9 +80,6 @@ const EMPTY_FORM: JobParseResult = {
   required_skills: [],
   preferred_skills: [],
   ideal_profile: null,
-  employment_type: null,
-  location: null,
-  remote_work: null,
   rate_min: null,
   rate_max: null,
   min_experience_years: null,
@@ -353,19 +337,9 @@ export default function JobNewPage() {
                 <Label>求める人物像</Label>
                 <Skeleton className="h-20 w-full" />
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="flex flex-col gap-1.5">
-                  <Label>雇用形態</Label>
-                  <Skeleton className="h-9 w-full" />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label>リモート可否</Label>
-                  <Skeleton className="h-9 w-full" />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label>ポジションレベル</Label>
-                  <Skeleton className="h-9 w-full" />
-                </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>ポジションレベル</Label>
+                <Skeleton className="h-9 w-full" />
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="flex flex-col gap-1.5">
@@ -380,10 +354,6 @@ export default function JobNewPage() {
                   <Label>最低経験年数（年）</Label>
                   <Skeleton className="h-9 w-full" />
                 </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>勤務地</Label>
-                <Skeleton className="h-9 w-full" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>求める業界経験</Label>
@@ -468,37 +438,15 @@ export default function JobNewPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="employment-type">雇用形態</Label>
-                  <EnumSelect<EmploymentType>
-                    id="employment-type"
-                    value={form.employment_type}
-                    options={EMPLOYMENT_TYPES}
-                    placeholder="未選択"
-                    onChange={(next) => patch("employment_type", next)}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="remote-work">リモート可否</Label>
-                  <EnumSelect<RemoteWork>
-                    id="remote-work"
-                    value={form.remote_work}
-                    options={REMOTE_WORKS}
-                    placeholder="未選択"
-                    onChange={(next) => patch("remote_work", next)}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="position-level">ポジションレベル</Label>
-                  <EnumSelect<PositionLevel>
-                    id="position-level"
-                    value={form.position_level}
-                    options={POSITION_LEVELS}
-                    placeholder="未選択"
-                    onChange={(next) => patch("position_level", next)}
-                  />
-                </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="position-level">ポジションレベル</Label>
+                <EnumSelect<PositionLevel>
+                  id="position-level"
+                  value={form.position_level}
+                  options={POSITION_LEVELS}
+                  placeholder="未選択"
+                  onChange={(next) => patch("position_level", next)}
+                />
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -528,20 +476,6 @@ export default function JobNewPage() {
                     onChange={(next) => patch("min_experience_years", next)}
                   />
                 </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="location">勤務地</Label>
-                <Input
-                  id="location"
-                  value={form.location ?? ""}
-                  onChange={(e) =>
-                    patch(
-                      "location",
-                      e.target.value === "" ? null : e.target.value,
-                    )
-                  }
-                />
               </div>
 
               <div className="flex flex-col gap-1.5">

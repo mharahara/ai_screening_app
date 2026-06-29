@@ -17,25 +17,6 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class EmploymentType(StrEnum):
-    """雇用形態。不明時は null。"""
-
-    FULL_TIME = "正社員"
-    CONTRACT = "契約社員"
-    OUTSOURCING = "業務委託"
-    DISPATCH = "派遣"
-    OTHER = "その他"
-
-
-class RemoteWork(StrEnum):
-    """リモート可否。曖昧だが言及はある場合 `不明`、言及なしは null。"""
-
-    FULL_REMOTE = "フルリモート"
-    PARTIAL_REMOTE = "一部リモート"
-    ONSITE = "出社"
-    UNKNOWN = "不明"
-
-
 class PositionLevel(StrEnum):
     """ポジションレベル。原文の役割記述から正規化する。"""
 
@@ -77,21 +58,6 @@ class JobParseResult(BaseModel):
     ideal_profile: str | None = Field(
         default=None,
         description="求める人物像。該当情報がなければ null。",
-    )
-    employment_type: EmploymentType | None = Field(
-        default=None,
-        description="雇用形態。候補値のいずれかに正規化する。言及がなければ null。",
-    )
-    location: str | None = Field(
-        default=None,
-        description="勤務地。該当情報がなければ null。",
-    )
-    remote_work: RemoteWork | None = Field(
-        default=None,
-        description=(
-            "リモート可否。候補値のいずれかに正規化する。"
-            "言及はあるが曖昧な場合は『不明』、言及自体がなければ null。"
-        ),
     )
     rate_min: int | None = Field(
         default=None,
