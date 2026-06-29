@@ -12,7 +12,7 @@ import {
   type CandidateRankingItem,
   type RequirementCheck,
 } from "@/lib/rankings";
-import { getJob } from "@/lib/jobs";
+import { getJob, type JobOut } from "@/lib/jobs";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -81,6 +81,8 @@ export default function JobRankingsPage() {
           スコア降順で候補者を表示します。スコア算出中の候補者は自動で更新されます。
         </p>
       </header>
+
+      {jobQuery.isSuccess && <JobDetailsPanel job={jobQuery.data} />}
 
       {rankingsQuery.isPending ? (
         <p className="text-sm text-muted-foreground">読み込み中...</p>

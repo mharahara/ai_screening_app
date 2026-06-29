@@ -107,9 +107,9 @@ def list_jobs(db: Session = Depends(get_db)) -> list[Job]:
     return list(db.scalars(select(Job).order_by(Job.created_at.desc(), Job.id.desc())).all())
 
 
-@router.get("/{job_id}", response_model=JobSummary)
+@router.get("/{job_id}", response_model=JobOut)
 def get_job(job_id: int, db: Session = Depends(get_db)) -> Job:
-    """求人を 1 件取得する（id / title / created_at）。存在しない場合は 404。"""
+    """求人を 1 件取得する（全フィールド）。存在しない場合は 404。"""
     job = db.get(Job, job_id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="求人が見つかりません。")
