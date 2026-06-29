@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2Icon } from "lucide-react";
+import { ClipboardIcon, ClipboardCheckIcon, Trash2Icon } from "lucide-react";
 
 import { ApiError } from "@/lib/api";
 import {
@@ -46,6 +46,45 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const JOBS_QUERY_KEY = ["jobs"] as const;
+
+const JOB_TEMPLATE = `【求人タイトル】
+例: シニアバックエンドエンジニア（Go/Kubernetes）
+
+【業務内容】
+・
+
+【必須スキル】
+・
+
+【歓迎スキル】
+・
+
+【雇用形態】
+業務委託 / 正社員 / 契約社員
+
+【リモート可否】
+フルリモート / 一部リモート / 出社
+
+【単価（万円/月）】
+下限: 　上限:
+
+【勤務地】
+
+
+【最低経験年数】
+〇年以上
+
+【ポジションレベル】
+ジュニア / ミドル / シニア / リード / マネージャー
+
+【求める業界経験】
+
+
+【資格要件】
+・
+
+【求める人物像】
+`;
 
 /** parse の空フォーム初期値。 */
 const EMPTY_FORM: JobParseResult = {
@@ -155,6 +194,7 @@ export default function JobNewPage() {
   const queryClient = useQueryClient();
 
   const [rawText, setRawText] = React.useState("");
+  const [hasCopiedTemplate, setHasCopiedTemplate] = React.useState(false);
   // parse 時に受け取った原文。保存（createJob）でそのまま送る。
   const [savedRawText, setSavedRawText] = React.useState("");
   const [form, setForm] = React.useState<JobParseResult>(EMPTY_FORM);
@@ -221,7 +261,32 @@ export default function JobNewPage() {
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 左: 生テキスト入力 */}
         <div className="flex flex-col gap-3">
-          <Label htmlFor="raw-text">求人票テキスト</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="raw-text">求人票テキスト</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(JOB_TEMPLATE).then(() => {
+                  setHasCopiedTemplate(true);
+                  setTimeout(() => setHasCopiedTemplate(false), 2000);
+                });
+              }}
+            >
+              {hasCopiedTemplate ? (
+                <>
+                  <ClipboardCheckIcon />
+                  コピーしました
+                </>
+              ) : (
+                <>
+                  <ClipboardIcon />
+                  テンプレをコピー
+                </>
+              )}
+            </Button>
+          </div>
           <Textarea
             id="raw-text"
             className="min-h-72"
