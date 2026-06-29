@@ -107,6 +107,15 @@ def list_jobs(db: Session = Depends(get_db)) -> list[Job]:
     return list(db.scalars(select(Job).order_by(Job.created_at.desc(), Job.id.desc())).all())
 
 
+@router.get("/{job_id}", response_model=JobSummary)
+def get_job(job_id: int, db: Session = Depends(get_db)) -> Job:
+    """求人を 1 件取得する（id / title / created_at）。存在しない場合は 404。"""
+    job = db.get(Job, job_id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="求人が見つかりません。")
+    return job
+
+
 @router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_job(job_id: int, db: Session = Depends(get_db)) -> None:
     """求人を削除する。関連する候補者・スコアはカスケード削除。"""

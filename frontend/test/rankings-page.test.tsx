@@ -125,6 +125,9 @@ describe("ランキング表示", () => {
   it("スコア算出済みの候補者がスコア付きで表示される", async () => {
     vi.mocked(useParams).mockReturnValue({ id: "10" });
     server.use(
+      http.get(`${API_BASE_URL}/jobs/10`, () =>
+        HttpResponse.json({ id: 10, title: "テスト求人", created_at: "2024-01-01T00:00:00" }),
+      ),
       http.get(`${API_BASE_URL}/jobs/10/rankings`, () =>
         HttpResponse.json([SCORED_ITEM]),
       ),
@@ -145,6 +148,9 @@ describe("ランキング表示", () => {
   it("候補者0件のとき空メッセージを表示する", async () => {
     vi.mocked(useParams).mockReturnValue({ id: "10" });
     server.use(
+      http.get(`${API_BASE_URL}/jobs/10`, () =>
+        HttpResponse.json({ id: 10, title: "テスト求人", created_at: "2024-01-01T00:00:00" }),
+      ),
       http.get(`${API_BASE_URL}/jobs/10/rankings`, () => HttpResponse.json([])),
     );
 
@@ -158,6 +164,9 @@ describe("ランキング表示", () => {
   it("スコア未算出の行は「算出中...」表示で詳細ボタンが disabled", async () => {
     vi.mocked(useParams).mockReturnValue({ id: "10" });
     server.use(
+      http.get(`${API_BASE_URL}/jobs/10`, () =>
+        HttpResponse.json({ id: 10, title: "テスト求人", created_at: "2024-01-01T00:00:00" }),
+      ),
       http.get(`${API_BASE_URL}/jobs/10/rankings`, () =>
         HttpResponse.json([PENDING_ITEM]),
       ),
@@ -176,6 +185,9 @@ describe("詳細ダイアログ", () => {
   it("詳細ボタン押下でダイアログが開き 4 タブが描画される", async () => {
     vi.mocked(useParams).mockReturnValue({ id: "10" });
     server.use(
+      http.get(`${API_BASE_URL}/jobs/10`, () =>
+        HttpResponse.json({ id: 10, title: "テスト求人", created_at: "2024-01-01T00:00:00" }),
+      ),
       http.get(`${API_BASE_URL}/jobs/10/rankings`, () =>
         HttpResponse.json([SCORED_ITEM]),
       ),
@@ -201,6 +213,9 @@ describe("詳細ダイアログ", () => {
   it("スコア未算出（score: null）のときスコア根拠・AIサマリータブに算出中表示が出る", async () => {
     vi.mocked(useParams).mockReturnValue({ id: "10" });
     server.use(
+      http.get(`${API_BASE_URL}/jobs/10`, () =>
+        HttpResponse.json({ id: 10, title: "テスト求人", created_at: "2024-01-01T00:00:00" }),
+      ),
       http.get(`${API_BASE_URL}/jobs/10/rankings`, () =>
         HttpResponse.json([SCORED_ITEM]),
       ),
@@ -239,6 +254,36 @@ describe("404 ハンドリング", () => {
   });
 });
 
+describe("求人タイトル表示", () => {
+  it("求人タイトルが取得できたとき <p> として表示される", async () => {
+    vi.mocked(useParams).mockReturnValue({ id: "10" });
+    server.use(
+      http.get(`${API_BASE_URL}/jobs/10`, () =>
+        HttpResponse.json({ id: 10, title: "シニア Rust エンジニア", created_at: "2026-06-01T00:00:00Z" }),
+      ),
+      http.get(`${API_BASE_URL}/jobs/10/rankings`, () => HttpResponse.json([])),
+    );
+
+    renderPage();
+
+    expect(await screen.findByText("シニア Rust エンジニア")).toBeInTheDocument();
+  });
+
+  it("title が null のとき「（無題）」が表示される", async () => {
+    vi.mocked(useParams).mockReturnValue({ id: "10" });
+    server.use(
+      http.get(`${API_BASE_URL}/jobs/10`, () =>
+        HttpResponse.json({ id: 10, title: null, created_at: "2026-06-01T00:00:00Z" }),
+      ),
+      http.get(`${API_BASE_URL}/jobs/10/rankings`, () => HttpResponse.json([])),
+    );
+
+    renderPage();
+
+    expect(await screen.findByText("（無題）")).toBeInTheDocument();
+  });
+});
+
 describe("スコア完了ポーリング", () => {
   it("未算出→算出済みに切り替わるとスコアが反映されポーリングが止まる", async () => {
     vi.useFakeTimers();
@@ -247,6 +292,9 @@ describe("スコア完了ポーリング", () => {
 
       let callCount = 0;
       server.use(
+        http.get(`${API_BASE_URL}/jobs/10`, () =>
+          HttpResponse.json({ id: 10, title: "テスト求人", created_at: "2024-01-01T00:00:00" }),
+        ),
         http.get(`${API_BASE_URL}/jobs/10/rankings`, () => {
           callCount += 1;
           // 1 回目は未算出、2 回目以降は算出済み（同一候補者）。

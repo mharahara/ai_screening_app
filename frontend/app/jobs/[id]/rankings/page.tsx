@@ -12,6 +12,7 @@ import {
   type CandidateRankingItem,
   type RequirementCheck,
 } from "@/lib/rankings";
+import { getJob } from "@/lib/jobs";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +38,12 @@ export default function JobRankingsPage() {
   const [detailCandidateId, setDetailCandidateId] = React.useState<
     number | null
   >(null);
+
+  const jobQuery = useQuery({
+    queryKey: ["job", jobId],
+    queryFn: () => getJob(jobId),
+    enabled: Number.isFinite(jobId),
+  });
 
   const rankingsQuery = useQuery({
     queryKey: ["rankings", jobId],
@@ -65,6 +72,11 @@ export default function JobRankingsPage() {
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 p-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight">候補者ランキング</h1>
+        {jobQuery.isSuccess && (
+          <p className="text-base font-medium">
+            {jobQuery.data.title ?? "（無題）"}
+          </p>
+        )}
         <p className="text-sm text-muted-foreground">
           スコア降順で候補者を表示します。スコア算出中の候補者は自動で更新されます。
         </p>
