@@ -269,6 +269,28 @@ def test_parse_then_create_roundtrip(client: TestClient, monkeypatch: pytest.Mon
     assert body["raw_text"] == "原文テキスト"
 
 
+# --- GET /jobs/{id} ----------------------------------------------------------
+
+
+def test_get_job_returns_summary_fields(client: TestClient) -> None:
+    """保存済み求人を id で取得すると id / title / created_at のみ返る。"""
+    created = client.post("/jobs", json=_VALID_JOB_PAYLOAD).json()
+    job_id = created["id"]
+
+    resp = client.get(f"/jobs/{job_id}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert set(body.keys()) == {"id", "title", "created_at"}
+    assert body["id"] == job_id
+    assert body["title"] == _VALID_JOB_PAYLOAD["title"]
+
+
+def test_get_job_not_found_returns_404(client: TestClient) -> None:
+    """存在しない job_id は 404 を返す。"""
+    resp = client.get("/jobs/99999")
+    assert resp.status_code == 404
+
+
 # --- GET /jobs/{id}/rankings ------------------------------------------------
 
 
