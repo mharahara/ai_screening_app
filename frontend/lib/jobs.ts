@@ -108,3 +108,8 @@ export function listJobs(): Promise<JobListItem[]> {
 export async function deleteJob(id: number): Promise<void> {
   await apiFetch<void>(`/jobs/${id}`, { method: "DELETE" });
 }
+
+/** 求人を1件取得する（`GET /jobs/{id}`）。 */
+export function getJob(id: number): Promise<JobOut> {
+  return apiFetch<JobOut>(`/jobs/${id}`);
+}
