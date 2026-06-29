@@ -7,6 +7,7 @@
 | POST | `/jobs/parse` | 求人票テキストを構造化して返す（未保存） |
 | POST | `/jobs` | 構造化済み求人要件を保存 |
 | GET | `/jobs` | 求人一覧（セレクター用） |
+| GET | `/jobs/{id}` | 求人を 1 件取得（全フィールド） |
 | DELETE | `/jobs/{id}` | 求人と関連データを削除 |
 | POST | `/candidates/parse` | 応募書類テキストを構造化して返す（未保存） |
 | POST | `/candidates` | 候補者を保存し、スコア算出をバックグラウンド起動 |
