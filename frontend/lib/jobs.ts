@@ -71,7 +71,7 @@ export interface JobParseResult {
 export type JobParseResponse = JobParseResult & { raw_text: string };
 
 /** `POST /jobs` のリクエスト（構造化結果 + 原文）。 */
-export type JobCreate = JobParseResult & { raw_text: string };
+export type JobCreate = JobParseResult & { raw_text: string; matching_instructions: string | null };
 
 /** `POST /jobs` のレスポンス（保存済み求人）。 */
 export type JobOut = JobCreate & { id: number; created_at: string };
@@ -107,4 +107,9 @@ export function listJobs(): Promise<JobListItem[]> {
 /** 求人を削除する（`DELETE /jobs/{id}`）。 */
 export async function deleteJob(id: number): Promise<void> {
   await apiFetch<void>(`/jobs/${id}`, { method: "DELETE" });
+}
+
+/** 求人を1件取得する（`GET /jobs/{id}`）。 */
+export function getJob(id: number): Promise<JobOut> {
+  return apiFetch<JobOut>(`/jobs/${id}`);
 }

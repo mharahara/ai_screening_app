@@ -123,6 +123,10 @@ class JobCreate(JobParseResult):
     """求人保存用スキーマ（構造化結果 + 原文）。"""
 
     raw_text: str = Field(description="求人票の原文。LLM には生成させず入力をそのまま保持する。")
+    matching_instructions: str | None = Field(
+        default=None,
+        description="マッチング時に LLM へ追加指示するカスタム評価指針。null なら追加指示なし。",
+    )
 
 
 class JobOut(JobCreate):

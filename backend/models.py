@@ -45,6 +45,7 @@ class Job(Base):
     position_level: Mapped[PositionLevel | None] = mapped_column(default=None)
     industry_experience: Mapped[str | None] = mapped_column(default=None)
     certifications: Mapped[list[str]] = mapped_column(JSON, default=list)
+    matching_instructions: Mapped[str | None] = mapped_column(default=None)
 
     # 原文（LLM には渡すが構造化対象には含めず、サーバが受領した入力をそのまま保持）。
     raw_text: Mapped[str] = mapped_column()

@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/tag-input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -152,6 +153,45 @@ export default function CandidateNewPage() {
     selectedJobId === null ||
     (jobsQuery.isSuccess && jobsQuery.data.length === 0);
 
+  const jobSelectorElement = (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor="job-select">対象求人</Label>
+      {jobsQuery.isError ? (
+        <p role="alert" className="text-sm text-destructive">
+          求人一覧の取得に失敗しました。
+        </p>
+      ) : jobsQuery.isSuccess && jobsQuery.data.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          先に求人を登録してください。
+        </p>
+      ) : (
+        <Select
+          value={selectedJobId !== null ? String(selectedJobId) : NONE_VALUE}
+          onValueChange={(next) => {
+            if (next === NONE_VALUE || next == null) {
+              setSelectedJobId(null);
+            } else {
+              setSelectedJobId(Number(next));
+            }
+          }}
+        >
+          <SelectTrigger id="job-select" className="w-full">
+            <SelectValue placeholder="求人を選択してください" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE_VALUE}>（未選択）</SelectItem>
+            {jobsQuery.isSuccess &&
+              jobsQuery.data.map((job) => (
+                <SelectItem key={job.id} value={String(job.id)}>
+                  {job.title ?? "（無題）"} #{job.id}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      )}
+    </div>
+  );
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 p-6">
       <header className="flex flex-col gap-1">
@@ -192,49 +232,61 @@ export default function CandidateNewPage() {
 
         {/* 右: 構造化結果の編集フォーム */}
         <div className="flex flex-col gap-4">
-          {!hasParsed ? (
+          {parseMutation.isPending && !hasParsed ? (
+            <div className="flex flex-col gap-4">
+              {/* 対象求人セレクターはLLM出力ではないため通常表示 */}
+              {jobSelectorElement}
+              <div className="flex flex-col gap-1.5">
+                <Label>氏名</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label>年齢（歳）</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>経験年数（年）</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>希望単価（万円/月）</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>最寄り駅</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>スキル</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>資格・学位</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>職歴</Label>
+                <Skeleton className="h-20 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>学歴</Label>
+                <Skeleton className="h-20 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>自己PR</Label>
+                <Skeleton className="h-20 w-full" />
+              </div>
+            </div>
+          ) : !hasParsed ? (
             <p className="text-sm text-muted-foreground">
               「解析する」を実行すると、ここに編集フォームが表示されます。
             </p>
           ) : (
             <>
               {/* 求人セレクター */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="job-select">対象求人</Label>
-                {jobsQuery.isError ? (
-                  <p role="alert" className="text-sm text-destructive">
-                    求人一覧の取得に失敗しました。
-                  </p>
-                ) : jobsQuery.isSuccess && jobsQuery.data.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    先に求人を登録してください。
-                  </p>
-                ) : (
-                  <Select
-                    value={selectedJobId !== null ? String(selectedJobId) : NONE_VALUE}
-                    onValueChange={(next) => {
-                      if (next === NONE_VALUE || next == null) {
-                        setSelectedJobId(null);
-                      } else {
-                        setSelectedJobId(Number(next));
-                      }
-                    }}
-                  >
-                    <SelectTrigger id="job-select" className="w-full">
-                      <SelectValue placeholder="求人を選択してください" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE_VALUE}>（未選択）</SelectItem>
-                      {jobsQuery.isSuccess &&
-                        jobsQuery.data.map((job) => (
-                          <SelectItem key={job.id} value={String(job.id)}>
-                            {job.title ?? "（無題）"} #{job.id}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
+              {jobSelectorElement}
 
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="name">氏名</Label>

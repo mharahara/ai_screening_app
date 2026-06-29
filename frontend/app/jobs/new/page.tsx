@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2Icon } from "lucide-react";
 
@@ -24,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/tag-input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -158,6 +160,7 @@ export default function JobNewPage() {
   const [form, setForm] = React.useState<JobParseResult>(EMPTY_FORM);
   const [hasParsed, setHasParsed] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState(false);
+  const [matchingInstructions, setMatchingInstructions] = React.useState<string | null>(null);
 
   function patch<K extends keyof JobParseResult>(
     key: K,
@@ -179,7 +182,7 @@ export default function JobNewPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () => createJob({ ...form, raw_text: savedRawText }),
+    mutationFn: () => createJob({ ...form, raw_text: savedRawText, matching_instructions: matchingInstructions }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: JOBS_QUERY_KEY });
       // フォームをクリアして次の入力に備える。
@@ -187,6 +190,7 @@ export default function JobNewPage() {
       setRawText("");
       setSavedRawText("");
       setHasParsed(false);
+      setMatchingInstructions(null);
       setSaveSuccess(true);
     },
   });
@@ -239,11 +243,89 @@ export default function JobNewPage() {
               </p>
             )}
           </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="matching-instructions">マッチング評価の追加指示</Label>
+            <Textarea
+              id="matching-instructions"
+              className="min-h-24"
+              placeholder="例：リモートワーク優先で評価する、金融業界経験を重視するなど"
+              value={matchingInstructions ?? ""}
+              onChange={(e) =>
+                setMatchingInstructions(e.target.value === "" ? null : e.target.value)
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              入力した内容がマッチング時の LLM プロンプトに追加されます。
+            </p>
+          </div>
         </div>
 
         {/* 右: 構造化結果の編集フォーム */}
         <div className="flex flex-col gap-4">
-          {!hasParsed ? (
+          {parseMutation.isPending && !hasParsed ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label>タイトル</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>業務内容</Label>
+                <Skeleton className="h-20 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>必須スキル</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>歓迎スキル</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>資格要件</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>求める人物像</Label>
+                <Skeleton className="h-20 w-full" />
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label>雇用形態</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>リモート可否</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>ポジションレベル</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label>単価下限（万円/月）</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>単価上限（万円/月）</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>最低経験年数（年）</Label>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>勤務地</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>求める業界経験</Label>
+                <Skeleton className="h-9 w-full" />
+              </div>
+            </div>
+          ) : !hasParsed ? (
             <p className="text-sm text-muted-foreground">
               「構造化する」を実行すると、ここに編集フォームが表示されます。
             </p>
@@ -465,34 +547,44 @@ export default function JobNewPage() {
                     {new Date(job.created_at).toLocaleString("ja-JP")}
                   </span>
                 </div>
-                <AlertDialog>
-                  <AlertDialogTrigger
-                    render={
-                      <Button variant="destructive" size="sm">
-                        <Trash2Icon />
-                        削除
-                      </Button>
-                    }
-                  />
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>求人を削除しますか？</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        「{job.title ?? "（無題）"}
-                        」を削除します。この操作は取り消せません。
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                      <AlertDialogAction
-                        variant="destructive"
-                        onClick={() => deleteMutation.mutate(job.id)}
-                      >
-                        削除する
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <div className="flex items-center gap-2">
+                  <Button
+                    render={<Link href={`/jobs/${job.id}/rankings`} />}
+                    nativeButton={false}
+                    variant="outline"
+                    size="sm"
+                  >
+                    ランキング
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      render={
+                        <Button variant="destructive" size="sm">
+                          <Trash2Icon />
+                          削除
+                        </Button>
+                      }
+                    />
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>求人を削除しますか？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          「{job.title ?? "（無題）"}
+                          」を削除します。この操作は取り消せません。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                        <AlertDialogAction
+                          variant="destructive"
+                          onClick={() => deleteMutation.mutate(job.id)}
+                        >
+                          削除する
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </li>
             ))}
           </ul>
