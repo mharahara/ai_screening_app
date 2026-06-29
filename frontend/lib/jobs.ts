@@ -71,7 +71,7 @@ export interface JobParseResult {
 export type JobParseResponse = JobParseResult & { raw_text: string };
 
 /** `POST /jobs` のリクエスト（構造化結果 + 原文）。 */
-export type JobCreate = JobParseResult & { raw_text: string };
+export type JobCreate = JobParseResult & { raw_text: string; matching_instructions: string | null };
 
 /** `POST /jobs` のレスポンス（保存済み求人）。 */
 export type JobOut = JobCreate & { id: number; created_at: string };

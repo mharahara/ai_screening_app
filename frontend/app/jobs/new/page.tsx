@@ -160,6 +160,7 @@ export default function JobNewPage() {
   const [form, setForm] = React.useState<JobParseResult>(EMPTY_FORM);
   const [hasParsed, setHasParsed] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState(false);
+  const [matchingInstructions, setMatchingInstructions] = React.useState<string | null>(null);
 
   function patch<K extends keyof JobParseResult>(
     key: K,
@@ -181,7 +182,7 @@ export default function JobNewPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () => createJob({ ...form, raw_text: savedRawText }),
+    mutationFn: () => createJob({ ...form, raw_text: savedRawText, matching_instructions: matchingInstructions }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: JOBS_QUERY_KEY });
       // フォームをクリアして次の入力に備える。
@@ -189,6 +190,7 @@ export default function JobNewPage() {
       setRawText("");
       setSavedRawText("");
       setHasParsed(false);
+      setMatchingInstructions(null);
       setSaveSuccess(true);
     },
   });
@@ -240,6 +242,21 @@ export default function JobNewPage() {
                 {parseErrorMessage(parseMutation.error)}
               </p>
             )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="matching-instructions">マッチング評価の追加指示</Label>
+            <Textarea
+              id="matching-instructions"
+              className="min-h-24"
+              placeholder="例：リモートワーク優先で評価する、金融業界経験を重視するなど"
+              value={matchingInstructions ?? ""}
+              onChange={(e) =>
+                setMatchingInstructions(e.target.value === "" ? null : e.target.value)
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              入力した内容がマッチング時の LLM プロンプトに追加されます。
+            </p>
           </div>
         </div>
 

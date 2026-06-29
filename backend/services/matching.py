@@ -119,11 +119,15 @@ def evaluate_match(job: Job, candidate: Candidate) -> MatchResult:
     user = _build_matching_user_prompt(job, candidate)
     expected_count = len(job.required_skills)
 
+    system = _MATCHING_SYSTEM_PROMPT
+    if job.matching_instructions and job.matching_instructions.strip():
+        system += f"\n\n# カスタム評価指示\n{job.matching_instructions.strip()}"
+
     for attempt in range(1, max_attempts + 1):
         # structured_chat は Pydantic バリデーション（スコア範囲・型不正）のみ担当し、
         # 内部でリトライする。失敗例外はそのまま伝播させる。
         result = structured_chat(
-            system=_MATCHING_SYSTEM_PROMPT,
+            system=system,
             user=user,
             schema=MatchResult,
         )

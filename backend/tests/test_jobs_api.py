@@ -285,6 +285,7 @@ def test_get_job_returns_summary_fields(client: TestClient) -> None:
         "id",
         "created_at",
         "raw_text",
+        "matching_instructions",
         "title",
         "description",
         "required_skills",
