@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { ClipboardIcon, ClipboardCheckIcon } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { ApiError } from "@/lib/api";
@@ -27,6 +28,42 @@ import {
 } from "@/components/ui/select";
 
 const JOBS_QUERY_KEY = ["jobs"] as const;
+
+const CANDIDATE_TEMPLATE = `【氏名】
+
+
+【年齢】
+〇〇歳
+
+【最寄り駅】
+
+
+【希望単価】
+〇〇万円/月
+
+【経験年数】
+〇年
+
+【スキル】
+・
+
+【資格・学位】
+・
+
+【職歴】
+〇〇年〇月〜〇〇年〇月　株式会社〇〇
+・職種：
+・業務内容：
+
+〇〇年〇月〜〇〇年〇月　株式会社〇〇
+・職種：
+・業務内容：
+
+【学歴】
+〇〇年〇月　〇〇大学〇〇学部卒業
+
+【自己PR】
+`;
 
 /** parse の空フォーム初期値。 */
 const EMPTY_FORM: CandidateParseResult = {
@@ -94,6 +131,7 @@ function NumberField({
 
 export default function CandidateNewPage() {
   const [rawText, setRawText] = React.useState("");
+  const [hasCopiedTemplate, setHasCopiedTemplate] = React.useState(false);
   const [savedRawText, setSavedRawText] = React.useState("");
   const [form, setForm] = React.useState<CandidateParseResult>(EMPTY_FORM);
   const [hasParsed, setHasParsed] = React.useState(false);
@@ -206,7 +244,32 @@ export default function CandidateNewPage() {
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 左: 生テキスト入力 */}
         <div className="flex flex-col gap-3">
-          <Label htmlFor="raw-text">応募書類テキスト</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="raw-text">応募書類テキスト</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(CANDIDATE_TEMPLATE).then(() => {
+                  setHasCopiedTemplate(true);
+                  setTimeout(() => setHasCopiedTemplate(false), 2000);
+                });
+              }}
+            >
+              {hasCopiedTemplate ? (
+                <>
+                  <ClipboardCheckIcon />
+                  コピーしました
+                </>
+              ) : (
+                <>
+                  <ClipboardIcon />
+                  テンプレをコピー
+                </>
+              )}
+            </Button>
+          </div>
           <Textarea
             id="raw-text"
             className="min-h-72"
