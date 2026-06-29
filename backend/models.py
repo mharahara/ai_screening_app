@@ -16,7 +16,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
 
 from db import Base
-from schemas import EmploymentType, PositionLevel, RemoteWork
+from schemas import PositionLevel
 
 
 class Job(Base):
@@ -36,9 +36,6 @@ class Job(Base):
     required_skills: Mapped[list[str]] = mapped_column(JSON, default=list)
     preferred_skills: Mapped[list[str]] = mapped_column(JSON, default=list)
     ideal_profile: Mapped[str | None] = mapped_column(default=None)
-    employment_type: Mapped[EmploymentType | None] = mapped_column(default=None)
-    location: Mapped[str | None] = mapped_column(default=None)
-    remote_work: Mapped[RemoteWork | None] = mapped_column(default=None)
     rate_min: Mapped[int | None] = mapped_column(default=None)
     rate_max: Mapped[int | None] = mapped_column(default=None)
     min_experience_years: Mapped[int | None] = mapped_column(default=None)

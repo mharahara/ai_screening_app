@@ -2,7 +2,7 @@
 
 - `init_db()` 相当（create_all）で `jobs` テーブルが生成されること。
 - JSON カラム（required_skills / preferred_skills / certifications）が配列として
-  往復保存・取得できること（enum・null も含めて素直に復元されること）。
+  往復保存・取得できること（null も含めて素直に復元されること）。
 
 本番 DB を汚さないため、conftest のインメモリ SQLite（test_engine / db_session）を使う。
 """
@@ -13,7 +13,6 @@ from sqlalchemy.pool import StaticPool
 
 from db import Base
 from models import Job
-from schemas import EmploymentType, RemoteWork
 
 
 def test_create_all_generates_jobs_table() -> None:
@@ -45,15 +44,13 @@ def test_create_all_generates_jobs_table() -> None:
 
 
 def test_json_columns_roundtrip(db_session: Session) -> None:
-    """JSON カラムが配列として往復し、enum・null も素直に復元される。"""
+    """JSON カラムが配列として往復し、null も素直に復元される。"""
     job = Job(
         title="バックエンドエンジニア",
         description=None,
         required_skills=["Python", "FastAPI", "SQLAlchemy"],
         preferred_skills=["Go"],
         certifications=["AWS SAA", "応用情報"],
-        employment_type=EmploymentType.OUTSOURCING,
-        remote_work=RemoteWork.FULL_REMOTE,
         rate_min=60,
         rate_max=90,
         raw_text="原文",
@@ -71,8 +68,6 @@ def test_json_columns_roundtrip(db_session: Session) -> None:
     assert fetched.certifications == ["AWS SAA", "応用情報"]
     assert isinstance(fetched.required_skills, list)
     assert fetched.description is None
-    assert fetched.employment_type == EmploymentType.OUTSOURCING
-    assert fetched.remote_work == RemoteWork.FULL_REMOTE
     assert fetched.created_at is not None
 
 

@@ -41,9 +41,6 @@ const PARSE_RESPONSE: JobParseResponse = {
   required_skills: ["Python"],
   preferred_skills: [],
   ideal_profile: null,
-  employment_type: "業務委託",
-  location: "東京",
-  remote_work: "フルリモート",
   rate_min: 60,
   rate_max: 90,
   min_experience_years: 3,
@@ -175,7 +172,6 @@ describe("parse → 編集 → 保存の状態遷移", () => {
     expect(createBody?.title).toBe("Edited Title");
     // 構造化結果のフィールドも送られる。
     expect(createBody?.required_skills).toEqual(["Python"]);
-    expect(createBody?.employment_type).toBe("業務委託");
 
     // 保存成功で成功メッセージが出る。
     expect(await screen.findByRole("status")).toHaveTextContent(

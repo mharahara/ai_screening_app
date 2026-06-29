@@ -7,17 +7,6 @@
 
 import { apiFetch } from "@/lib/api";
 
-/** 雇用形態。値がそのまま表示ラベル。null は未選択（言及なし）。 */
-export type EmploymentType =
-  | "正社員"
-  | "契約社員"
-  | "業務委託"
-  | "派遣"
-  | "その他";
-
-/** リモート可否。 */
-export type RemoteWork = "フルリモート" | "一部リモート" | "出社" | "不明";
-
 /** ポジションレベル。 */
 export type PositionLevel =
   | "ジュニア"
@@ -25,21 +14,6 @@ export type PositionLevel =
   | "シニア"
   | "リード"
   | "マネージャー";
-
-export const EMPLOYMENT_TYPES: readonly EmploymentType[] = [
-  "正社員",
-  "契約社員",
-  "業務委託",
-  "派遣",
-  "その他",
-];
-
-export const REMOTE_WORKS: readonly RemoteWork[] = [
-  "フルリモート",
-  "一部リモート",
-  "出社",
-  "不明",
-];
 
 export const POSITION_LEVELS: readonly PositionLevel[] = [
   "ジュニア",
@@ -56,9 +30,6 @@ export interface JobParseResult {
   required_skills: string[];
   preferred_skills: string[];
   ideal_profile: string | null;
-  employment_type: EmploymentType | null;
-  location: string | null;
-  remote_work: RemoteWork | null;
   rate_min: number | null;
   rate_max: number | null;
   min_experience_years: number | null;

@@ -134,9 +134,6 @@ function JobDetailsPanel({ job }: { job: JobOut }) {
             <JobTagField label="必須スキル" values={job.required_skills} className="sm:col-span-2" />
             <JobTagField label="歓迎スキル" values={job.preferred_skills} className="sm:col-span-2" />
             <JobField label="理想の人物像" value={job.ideal_profile} className="sm:col-span-2" />
-            <JobField label="雇用形態" value={job.employment_type} />
-            <JobField label="勤務地" value={job.location} />
-            <JobField label="リモート" value={job.remote_work} />
             <JobField
               label="単価（最低）"
               value={job.rate_min !== null ? `${job.rate_min} 万円/月` : null}
