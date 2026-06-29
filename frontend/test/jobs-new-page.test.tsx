@@ -232,6 +232,39 @@ describe("保存済み一覧と削除", () => {
     expect(listCallCount).toBeGreaterThanOrEqual(2);
   });
 
+  it("各求人行にランキングリンクが表示され、href が /jobs/{id}/rankings になっている", async () => {
+    const jobs = [
+      { id: 1, title: "Job A", created_at: "2026-06-26T00:00:00Z" },
+      { id: 2, title: "Job B", created_at: "2026-06-25T00:00:00Z" },
+    ];
+
+    server.use(
+      http.get(`${API_BASE_URL}/jobs`, () => HttpResponse.json(jobs)),
+    );
+
+    renderPage();
+
+    // 一覧が描画される。
+    expect(await screen.findByText("Job A")).toBeInTheDocument();
+    expect(screen.getByText("Job B")).toBeInTheDocument();
+
+    // Job A の行でランキングボタン（base-ui Button + Link: <a role="button">）を取得する。
+    const jobAItem = screen.getByText("Job A").closest("li");
+    expect(jobAItem).not.toBeNull();
+    const rankingLinkA = within(jobAItem as HTMLElement).getByRole("button", {
+      name: "ランキング",
+    });
+    expect(rankingLinkA).toHaveAttribute("href", "/jobs/1/rankings");
+
+    // Job B の行でランキングボタン（base-ui Button + Link: <a role="button">）を取得する。
+    const jobBItem = screen.getByText("Job B").closest("li");
+    expect(jobBItem).not.toBeNull();
+    const rankingLinkB = within(jobBItem as HTMLElement).getByRole("button", {
+      name: "ランキング",
+    });
+    expect(rankingLinkB).toHaveAttribute("href", "/jobs/2/rankings");
+  });
+
   it("一覧が 0 件のとき空状態の文言を表示する", async () => {
     server.use(http.get(`${API_BASE_URL}/jobs`, () => HttpResponse.json([])));
 

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2Icon } from "lucide-react";
 
@@ -465,34 +466,44 @@ export default function JobNewPage() {
                     {new Date(job.created_at).toLocaleString("ja-JP")}
                   </span>
                 </div>
-                <AlertDialog>
-                  <AlertDialogTrigger
-                    render={
-                      <Button variant="destructive" size="sm">
-                        <Trash2Icon />
-                        削除
-                      </Button>
-                    }
-                  />
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>求人を削除しますか？</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        「{job.title ?? "（無題）"}
-                        」を削除します。この操作は取り消せません。
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                      <AlertDialogAction
-                        variant="destructive"
-                        onClick={() => deleteMutation.mutate(job.id)}
-                      >
-                        削除する
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <div className="flex items-center gap-2">
+                  <Button
+                    render={<Link href={`/jobs/${job.id}/rankings`} />}
+                    nativeButton={false}
+                    variant="outline"
+                    size="sm"
+                  >
+                    ランキング
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      render={
+                        <Button variant="destructive" size="sm">
+                          <Trash2Icon />
+                          削除
+                        </Button>
+                      }
+                    />
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>求人を削除しますか？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          「{job.title ?? "（無題）"}
+                          」を削除します。この操作は取り消せません。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                        <AlertDialogAction
+                          variant="destructive"
+                          onClick={() => deleteMutation.mutate(job.id)}
+                        >
+                          削除する
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </li>
             ))}
           </ul>
